@@ -127,7 +127,7 @@ describe("AST read tools", () => {
     );
     const text = result.content[0]?.type === "text" ? result.content[0].text : "";
     const lines = source.split(/\r?\n/);
-    const body = lines.slice(2, 7);
+    const body = lines.slice(2, 6);
 
     expect(text).toContain("sample.ts::greet");
     expect(text).toContain(`[Function Hash: ${contentHash(body.join("\n"))}]`);
@@ -138,5 +138,90 @@ describe("AST read tools", () => {
     expect(text).not.toContain("DiracH│class Greeter {");
     expect(text).toContain("sample.ts::Missing\nNot found.");
     expect(result.details).toEqual({ paths: ["sample.ts"], function_names: ["greet", "Missing"] });
+  });
+
+  it("stops JS/TS function ranges when block bodies close", async () => {
+    const cwd = await createTempDir();
+    const source = [
+      "export function build() {",
+      "  if (true) {",
+      "    return { ok: true };",
+      "  }",
+      "}",
+      "const leaked = 1;",
+      "",
+      "const helper = (value: number) => value + 1;",
+      "const alsoLeaked = 2;"
+    ].join("\n");
+    await writeFile(join(cwd, "sample.ts"), source, "utf8");
+
+    const tool = registerFunctionToolForTest();
+    const blockResult = await tool.execute(
+      "call-4",
+      { paths: ["sample.ts"], function_names: ["build"] },
+      undefined,
+      undefined,
+      { cwd } as never
+    );
+    const blockText = blockResult.content[0]?.type === "text" ? blockResult.content[0].text : "";
+
+    expect(blockText).toContain("sample.ts::build");
+    expect(blockText).toContain("return { ok: true };");
+    expect(blockText).not.toContain("const leaked = 1;");
+
+    const arrowResult = await tool.execute(
+      "call-5",
+      { paths: ["sample.ts"], function_names: ["helper"] },
+      undefined,
+      undefined,
+      { cwd } as never
+    );
+    const arrowText = arrowResult.content[0]?.type === "text" ? arrowResult.content[0].text : "";
+
+    expect(arrowText).toContain("sample.ts::helper");
+    expect(arrowText).toContain("const helper = (value: number) => value + 1;");
+    expect(arrowText).not.toContain("const alsoLeaked = 2;");
+  });
+
+  it("handles Python async def starts and boundaries", async () => {
+    const cwd = await createTempDir();
+    const source = [
+      "def first():",
+      "    return 1",
+      "",
+      "async def second():",
+      "    return 2",
+      "",
+      "def third():",
+      "    return 3"
+    ].join("\n");
+    await writeFile(join(cwd, "sample.py"), source, "utf8");
+
+    const tool = registerFunctionToolForTest();
+    const firstResult = await tool.execute(
+      "call-6",
+      { paths: ["sample.py"], function_names: ["first"] },
+      undefined,
+      undefined,
+      { cwd } as never
+    );
+    const firstText = firstResult.content[0]?.type === "text" ? firstResult.content[0].text : "";
+
+    expect(firstText).toContain("sample.py::first");
+    expect(firstText).toContain("def first():");
+    expect(firstText).not.toContain("async def second():");
+
+    const secondResult = await tool.execute(
+      "call-7",
+      { paths: ["sample.py"], function_names: ["second"] },
+      undefined,
+      undefined,
+      { cwd } as never
+    );
+    const secondText = secondResult.content[0]?.type === "text" ? secondResult.content[0].text : "";
+
+    expect(secondText).toContain("sample.py::second");
+    expect(secondText).toContain("async def second():");
+    expect(secondText).not.toContain("def third():");
   });
 });

@@ -3,26 +3,40 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { contentHash, formatLineWithHash } from "../anchors/line-hashing.js";
+import { appendOutputLine, appendTruncationNotice, createOutputAccumulator, throwIfAborted } from "./output-limits.js";
 import { GetFunctionSchema } from "./schemas.js";
 
-const NEXT_DEFINITION_LINE = /^(export\s+)?(default\s+)?(async\s+)?(function|class|const)\b|^(def|class)\b/;
+const NEXT_PYTHON_DEFINITION_LINE = /^(async\s+def|def|class)\b/;
+const NEXT_JS_TS_DEFINITION_LINE = /^(export\s+)?(default\s+)?(async\s+)?(function|class|const)\b/;
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function findFunctionRange(lines: string[], name: string): [number, number] | undefined {
-  const escaped = escapeRegExp(name);
-  const startRegex = new RegExp(
-    `(^\\s*(export\\s+)?(default\\s+)?(async\\s+)?function\\s+${escaped}\\b)|` +
-      `(^\\s*(export\\s+)?const\\s+${escaped}\\s*=)|` +
-      `(^\\s*def\\s+${escaped}\\b)|` +
-      `(^\\s*(export\\s+)?(default\\s+)?class\\s+${escaped}\\b)|` +
-      `(^\\s*class\\s+${escaped}\\b)`
-  );
-  const start = lines.findIndex((line) => startRegex.test(line));
-  if (start === -1) return undefined;
+function isPythonStartLine(line: string, escapedName: string): boolean {
+  return new RegExp(
+    `^\\s*(async\\s+)?def\\s+${escapedName}\\b.*:\\s*(#.*)?$|^\\s*class\\s+${escapedName}\\b.*:\\s*(#.*)?$`
+  ).test(line);
+}
 
+function countBraceDelta(line: string): number {
+  let delta = 0;
+  for (const char of line) {
+    if (char === "{") delta++;
+    if (char === "}") delta--;
+  }
+  return delta;
+}
+
+function isOneLineExpressionArrow(line: string): boolean {
+  const arrowIndex = line.indexOf("=>");
+  if (arrowIndex === -1) return false;
+
+  const expression = line.slice(arrowIndex + 2).trim();
+  return expression.length > 0 && !expression.startsWith("{");
+}
+
+function findPythonRange(lines: string[], start: number): [number, number] {
   const baseIndent = lines[start].match(/^\s*/)?.[0].length ?? 0;
   let end = start;
 
@@ -34,11 +48,48 @@ export function findFunctionRange(lines: string[], name: string): [number, numbe
     }
 
     const indent = line.match(/^\s*/)?.[0].length ?? 0;
-    if (indent <= baseIndent && NEXT_DEFINITION_LINE.test(line.trim())) break;
+    if (indent <= baseIndent && NEXT_PYTHON_DEFINITION_LINE.test(line.trim())) break;
     end = i;
   }
 
   return [start, end];
+}
+
+function findJsTsRange(lines: string[], start: number): [number, number] {
+  if (isOneLineExpressionArrow(lines[start])) return [start, start];
+
+  let depth = 0;
+  let sawBody = false;
+
+  for (let i = start; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.includes("{")) sawBody = true;
+    depth += countBraceDelta(line);
+
+    if (sawBody && depth <= 0) return [start, i];
+
+    if (!sawBody && i > start && NEXT_JS_TS_DEFINITION_LINE.test(line.trim())) {
+      return [start, i - 1];
+    }
+  }
+
+  return [start, lines.length - 1];
+}
+
+export function findFunctionRange(lines: string[], name: string): [number, number] | undefined {
+  const escaped = escapeRegExp(name);
+  const startRegex = new RegExp(
+    `(^\\s*(export\\s+)?(default\\s+)?(async\\s+)?function\\s+${escaped}\\b)|` +
+      `(^\\s*(export\\s+)?const\\s+${escaped}\\s*=)|` +
+      `(^\\s*(async\\s+)?def\\s+${escaped}\\b)|` +
+      `(^\\s*(export\\s+)?(default\\s+)?class\\s+${escaped}\\b)|` +
+      `(^\\s*class\\s+${escaped}\\b)`
+  );
+  const start = lines.findIndex((line) => startRegex.test(line));
+  if (start === -1) return undefined;
+
+  if (isPythonStartLine(lines[start], escaped)) return findPythonRange(lines, start);
+  return findJsTsRange(lines, start);
 }
 
 export function registerGetFunctionTool(pi: ExtensionAPI, anchors: AnchorStateManager): void {
@@ -47,33 +98,48 @@ export function registerGetFunctionTool(pi: ExtensionAPI, anchors: AnchorStateMa
     label: "Get Function",
     description: "Extract anchored implementations of named functions/classes from files.",
     parameters: GetFunctionSchema,
-    async execute(_id, params, _signal, _onUpdate, ctx) {
-      const outputs: string[] = [];
+    async execute(_id, params, signal, _onUpdate, ctx) {
+      const output = createOutputAccumulator();
+      let hasOutput = false;
 
       for (const requestedPath of params.paths) {
+        throwIfAborted(signal, "get_function aborted");
+
         const absolutePath = resolve(ctx.cwd, requestedPath.replace(/^@/, ""));
-        const content = await readFile(absolutePath, "utf8");
+        const content = await readFile(absolutePath, { encoding: "utf8", signal });
         const lines = content.split(/\r?\n/);
         const lineAnchors = anchors.reconcile(absolutePath, lines);
 
         for (const name of params.function_names) {
+          throwIfAborted(signal, "get_function aborted");
+
+          if (hasOutput) {
+            appendOutputLine(output, "");
+            appendOutputLine(output, "---");
+            appendOutputLine(output, "");
+          }
+
           const range = findFunctionRange(lines, name);
           if (!range) {
-            outputs.push(`${requestedPath}::${name}\nNot found.`);
+            appendOutputLine(output, `${requestedPath}::${name}`);
+            appendOutputLine(output, "Not found.");
+            hasOutput = true;
             continue;
           }
 
           const [start, end] = range;
           const body = lines.slice(start, end + 1);
-          const anchored = body.map((line, offset) => formatLineWithHash(line, lineAnchors[start + offset]));
-          outputs.push(
-            `${requestedPath}::${name}\n[Function Hash: ${contentHash(body.join("\n"))}]\n${anchored.join("\n")}`
-          );
+          appendOutputLine(output, `${requestedPath}::${name}`);
+          appendOutputLine(output, `[Function Hash: ${contentHash(body.join("\n"))}]`);
+          for (let offset = 0; offset < body.length; offset++) {
+            if (!appendOutputLine(output, formatLineWithHash(body[offset], lineAnchors[start + offset]))) break;
+          }
+          hasOutput = true;
         }
       }
 
       return {
-        content: [{ type: "text", text: outputs.join("\n\n---\n\n") }],
+        content: [{ type: "text", text: appendTruncationNotice(output.parts.join(""), output) }],
         details: { paths: params.paths, function_names: params.function_names }
       };
     }

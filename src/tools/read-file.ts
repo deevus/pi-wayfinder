@@ -3,21 +3,8 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { contentHash, formatLineWithHash } from "../anchors/line-hashing.js";
+import { appendOutputLine, appendTruncationNotice, createOutputAccumulator, throwIfAborted } from "./output-limits.js";
 import { ReadFileSchema } from "./schemas.js";
-
-const MAX_OUTPUT_LINES = 2000;
-const MAX_OUTPUT_BYTES = 50 * 1024;
-
-interface OutputAccumulator {
-  parts: string[];
-  lineCount: number;
-  byteCount: number;
-  truncated: boolean;
-}
-
-function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) throw signal.reason ?? new Error("read_file aborted");
-}
 
 function validateLineParameter(name: "start_line" | "end_line", value: number | undefined): void {
   if (value === undefined) return;
@@ -40,34 +27,6 @@ function resolveLineRange(params: { start_line?: number; end_line?: number }, to
   return { start, end: Math.min(totalLines, requestedEnd) };
 }
 
-function appendOutputLine(output: OutputAccumulator, line: string): boolean {
-  if (output.truncated) return false;
-  if (output.lineCount >= MAX_OUTPUT_LINES) {
-    output.truncated = true;
-    return false;
-  }
-
-  const separatorBytes = output.lineCount === 0 ? 0 : Buffer.byteLength("\n", "utf8");
-  const lineBytes = Buffer.byteLength(line, "utf8");
-  if (output.byteCount + separatorBytes + lineBytes > MAX_OUTPUT_BYTES) {
-    output.truncated = true;
-    return false;
-  }
-
-  if (output.lineCount > 0) output.parts.push("\n");
-  output.parts.push(line);
-  output.lineCount++;
-  output.byteCount += separatorBytes + lineBytes;
-  return true;
-}
-
-function appendTruncationNotice(text: string, output: OutputAccumulator): string {
-  if (!output.truncated) return text;
-
-  const notice = `[Output truncated: showing the first ${output.lineCount} lines within ${MAX_OUTPUT_BYTES} bytes. Narrow the read with start_line/end_line to inspect omitted content.]`;
-  return text.length > 0 ? `${text}\n\n${notice}` : notice;
-}
-
 export function registerReadFileTool(pi: ExtensionAPI, anchors: AnchorStateManager): void {
   pi.registerTool({
     name: "read_file",
@@ -77,11 +36,11 @@ export function registerReadFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
     promptGuidelines: ["Use read_file before edit_file when changing existing source files."],
     parameters: ReadFileSchema,
     async execute(_id, params, signal, _onUpdate, ctx) {
-      const output: OutputAccumulator = { parts: [], lineCount: 0, byteCount: 0, truncated: false };
+      const output = createOutputAccumulator();
       let isFirstFile = true;
 
       for (const requestedPath of params.paths) {
-        throwIfAborted(signal);
+        throwIfAborted(signal, "read_file aborted");
 
         const absolutePath = resolve(ctx.cwd, requestedPath.replace(/^@/, ""));
         const content = await readFile(absolutePath, { encoding: "utf8", signal });
