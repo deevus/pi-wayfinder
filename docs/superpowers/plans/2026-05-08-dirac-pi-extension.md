@@ -394,7 +394,7 @@ git commit -m "feat: add stable Dirac anchor manager"
 - Modify: `src/index.ts`
 - Create: `test/read-file.test.ts`
 
-- [ ] **Step 1: Define schemas**
+- [x] **Step 1: Define schemas**
 
 Create `src/tools/schemas.ts`:
 
@@ -424,7 +424,7 @@ export const EditFileSchema = Type.Object({
 });
 ```
 
-- [ ] **Step 2: Implement `read_file` factory**
+- [x] **Step 2: Implement `read_file` factory**
 
 Create `src/tools/read-file.ts`:
 
@@ -468,7 +468,7 @@ export function registerReadFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
 }
 ```
 
-- [ ] **Step 3: Register tool in entrypoint**
+- [x] **Step 3: Register tool in entrypoint**
 
 Modify `src/index.ts` to create an anchor manager and register the read tool:
 
@@ -515,7 +515,7 @@ export default function diracToolsExtension(pi: ExtensionAPI): void {
 }
 ```
 
-- [ ] **Step 4: Run typecheck**
+- [x] **Step 4: Run typecheck**
 
 ```bash
 npm run typecheck
@@ -523,7 +523,7 @@ npm run typecheck
 
 Expected: no type errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src test
