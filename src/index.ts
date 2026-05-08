@@ -1,11 +1,13 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { AnchorStateManager } from "./anchors/AnchorStateManager.js";
 import { activeToolsForMode, parseOverrideMode, parseToolMode } from "./mode.js";
+import { registerEditFileTool } from "./tools/edit-file.js";
 import { registerReadFileTool } from "./tools/read-file.js";
 
 export default function diracToolsExtension(pi: ExtensionAPI): void {
   const anchors = new AnchorStateManager();
   registerReadFileTool(pi, anchors);
+  registerEditFileTool(pi, anchors);
 
   let baselineActiveTools: string[] | undefined;
 
