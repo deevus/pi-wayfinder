@@ -943,7 +943,7 @@ git commit -m "feat: add Dirac AST context tool MVPs"
 **Files:**
 - Modify: `README.md`
 
-- [ ] **Step 1: Run package checks**
+- [x] **Step 1: Run package checks**
 
 ```bash
 npm test && npm run typecheck
@@ -951,7 +951,7 @@ npm test && npm run typecheck
 
 Expected: tests pass and TypeScript reports no errors.
 
-- [ ] **Step 2: Run pi smoke test in additive mode**
+- [x] **Step 2: Run pi smoke test in additive mode**
 
 From repo root:
 
@@ -961,7 +961,7 @@ pi -e . --dirac-tools-mode additive -p "Use read_file on README.md and summarize
 
 Expected: pi loads the extension, model can call `read_file`, and output includes anchored file content or a summary derived from it.
 
-- [ ] **Step 3: Run pi smoke test in replacement mode**
+- [x] **Step 3: Run pi smoke test in replacement mode**
 
 ```bash
 pi -e . --dirac-tools-mode replacement -p "Use read_file on README.md and report whether Dirac mentions hash-anchored edits."
@@ -969,7 +969,7 @@ pi -e . --dirac-tools-mode replacement -p "Use read_file on README.md and report
 
 Expected: active tools exclude `read` and `edit`, include `read_file` and `edit_file`, and the model uses Dirac tools.
 
-- [ ] **Step 4: Document smoke commands**
+- [x] **Step 4: Document smoke commands**
 
 Append to `README.md`:
 
@@ -982,7 +982,7 @@ pi -e . --dirac-tools-mode replacement -p "Use read_file on README.md and report
 ```
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add README.md
