@@ -13,8 +13,31 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function isPythonStartLine(line: string, escapedName: string): boolean {
-  return new RegExp(`^\\s*(async\\s+)?def\\s+${escapedName}\\b|^\\s*class\\s+${escapedName}\\b`).test(line);
+function hasPythonMultilineClassContext(lines: string[], start: number, escapedName: string): boolean {
+  const classHeader = new RegExp(`^\\s*class\\s+${escapedName}\\b[^{}:]*\\(`);
+  if (!classHeader.test(lines[start])) return false;
+
+  let parenDepth = 0;
+  for (let i = start; i < lines.length; i++) {
+    const code = lines[i].split("#", 1)[0] ?? "";
+    if (code.includes("{")) return false;
+
+    for (const char of code) {
+      if (char === "(") parenDepth++;
+      if (char === ")") parenDepth--;
+    }
+
+    if (parenDepth <= 0) return code.trimEnd().endsWith(":");
+  }
+
+  return false;
+}
+
+function isPythonStartLine(lines: string[], start: number, escapedName: string): boolean {
+  const line = lines[start];
+  if (new RegExp(`^\\s*(async\\s+)?def\\s+${escapedName}\\b`).test(line)) return true;
+  if (new RegExp(`^\\s*class\\s+${escapedName}\\b[^{}]*:`).test(line)) return true;
+  return hasPythonMultilineClassContext(lines, start, escapedName);
 }
 
 type BraceCounterState = {
@@ -154,7 +177,7 @@ export function findFunctionRange(lines: string[], name: string): [number, numbe
   const start = lines.findIndex((line) => startRegex.test(line));
   if (start === -1) return undefined;
 
-  if (isPythonStartLine(lines[start], escaped)) return findPythonRange(lines, start);
+  if (isPythonStartLine(lines, start, escaped)) return findPythonRange(lines, start);
   return findJsTsRange(lines, start);
 }
 

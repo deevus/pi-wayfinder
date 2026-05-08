@@ -183,6 +183,39 @@ describe("AST read tools", () => {
     expect(arrowText).not.toContain("const alsoLeaked = 2;");
   });
 
+  it("uses JS/TS brace ranges for unexported classes", async () => {
+    const cwd = await createTempDir();
+    const source = [
+      "class Greeter {",
+      "  greet() {",
+      "    return 'hello';",
+      "  }",
+      "}",
+      "",
+      "const topLevel = new Greeter();",
+      "function after() {",
+      "  return topLevel;",
+      "}"
+    ].join("\n");
+    await writeFile(join(cwd, "sample.ts"), source, "utf8");
+
+    const tool = registerFunctionToolForTest();
+    const result = await tool.execute(
+      "call-10",
+      { paths: ["sample.ts"], function_names: ["Greeter"] },
+      undefined,
+      undefined,
+      { cwd } as never
+    );
+    const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+
+    expect(text).toContain("sample.ts::Greeter");
+    expect(text).toContain("class Greeter {");
+    expect(text).toContain("return 'hello';");
+    expect(text).not.toContain("const topLevel = new Greeter();");
+    expect(text).not.toContain("function after()");
+  });
+
   it("handles Python async def starts and boundaries", async () => {
     const cwd = await createTempDir();
     const source = [
