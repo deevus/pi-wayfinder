@@ -58,4 +58,60 @@ describe("parseFile", () => {
     expect(caller?.lineCount).toBe(3);
     expect(caller?.calls).toEqual(["called"]);
   });
+
+  it("normalizes CRLF line endings in returned definition text", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, [
+      "function first() { return 1; }",
+      "function second() { return first(); }"
+    ].join("\r\n"), "utf8");
+
+    const parsers = await loadRequiredLanguageParsers([filePath]);
+    const defs = await parseFile(filePath, parsers);
+
+    expect(defs?.map((def) => def.text)).toEqual([
+      "function first() { return 1; }",
+      "function second() { return first(); }"
+    ]);
+  });
+
+  it("does not count nested function calls as calls of the outer function", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, [
+      "function called() { return 1; }",
+      "function outer() {",
+      "  function inner() {",
+      "    return called();",
+      "  }",
+      "  return 0;",
+      "}"
+    ].join("\n"), "utf8");
+
+    const parsers = await loadRequiredLanguageParsers([filePath]);
+    const defs = await parseFile(filePath, parsers, { showCallGraph: true });
+    const outer = defs?.find((def) => def.text === "function outer() {");
+    const inner = defs?.find((def) => def.text === "  function inner() {");
+
+    expect(outer?.calls).toBeUndefined();
+    expect(inner?.calls).toEqual(["called"]);
+  });
+
+  it("does not count member calls as local function calls by bare property name", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, [
+      "function save() { return 1; }",
+      "function caller(api: { save: () => number }) {",
+      "  return api.save();",
+      "}"
+    ].join("\n"), "utf8");
+
+    const parsers = await loadRequiredLanguageParsers([filePath]);
+    const defs = await parseFile(filePath, parsers, { showCallGraph: true });
+    const caller = defs?.find((def) => def.text === "function caller(api: { save: () => number }) {");
+
+    expect(caller?.calls).toBeUndefined();
+  });
 });

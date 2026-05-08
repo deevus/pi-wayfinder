@@ -30,7 +30,7 @@ export async function parseFile(
     if (!tree?.rootNode) return null;
 
     const captures = query.captures(tree.rootNode);
-    const lines = fileContent.split("\n");
+    const lines = fileContent.split(/\r?\n/);
     const definitions: ParsedDefinition[] = [];
     const definedNames = new Set<string>();
     const allReferences: { node: Parser.SyntaxNode; text: string; line: number }[] = [];
@@ -95,7 +95,10 @@ export async function parseFile(
             const localCalls = new Set<string>();
             for (const ref of allReferences) {
               if (ref.line >= startRow && ref.line <= endRow && definedNames.has(ref.text) && ref.text !== node.text) {
-                if (isCallNode(ref.node)) localCalls.add(ref.text);
+                const nearestDefinitionNode = findNearestDefinitionNode(ref.node, definitionNodes);
+                if (nearestDefinitionNode?.id === definitionNode.id && isDirectIdentifierCallNode(ref.node)) {
+                  localCalls.add(ref.text);
+                }
               }
             }
             if (localCalls.size > 0) def.calls = Array.from(localCalls);
@@ -112,7 +115,22 @@ export async function parseFile(
   }
 }
 
-function isCallNode(node: Parser.SyntaxNode): boolean {
+function findNearestDefinitionNode(
+  node: Parser.SyntaxNode,
+  definitionNodes: Map<number, string>,
+): Parser.SyntaxNode | null {
+  let current: Parser.SyntaxNode | null = node;
+  while (current) {
+    if (definitionNodes.has(current.id)) return current;
+    current = current.parent;
+  }
+  return null;
+}
+
+function isDirectIdentifierCallNode(node: Parser.SyntaxNode): boolean {
+  const directIdentifierTypes = ["identifier", "simple_identifier", "name"];
+  if (!directIdentifierTypes.includes(node.type)) return false;
+
   const parent = node.parent;
   if (!parent) return false;
 
@@ -121,16 +139,8 @@ function isCallNode(node: Parser.SyntaxNode): boolean {
     "call_expression",
     "method_invocation",
     "function_call_expression",
-    "member_call_expression",
     "invocation_expression",
   ];
-  if (callTypes.includes(parent.type)) return true;
 
-  const memberTypes = ["member_expression", "member_access_expression", "property_access", "member_call_expression"];
-  if (memberTypes.includes(parent.type)) {
-    const grandParent = parent.parent;
-    return !!grandParent && callTypes.includes(grandParent.type);
-  }
-
-  return false;
+  return callTypes.includes(parent.type);
 }
