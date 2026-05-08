@@ -989,7 +989,7 @@ git commit -m "feat: use tree-sitter for AST read tools"
 - Modify: `README.md`
 - Modify: `docs/superpowers/plans/2026-05-08-phase-1-tree-sitter-ast.md`
 
-- [ ] **Step 1: Document tree-sitter support**
+- [x] **Step 1: Document tree-sitter support**
 
 Append to `README.md`:
 
@@ -1001,7 +1001,7 @@ Append to `README.md`:
 For unsupported languages or parser load failures, the tools fall back to the conservative regex MVP for common JavaScript, TypeScript, and Python top-level definitions.
 ```
 
-- [ ] **Step 2: Run complete automated verification**
+- [x] **Step 2: Run complete automated verification**
 
 ```bash
 npm test && npm run typecheck
@@ -1009,7 +1009,7 @@ npm test && npm run typecheck
 
 Expected: all tests pass and TypeScript compiles.
 
-- [ ] **Step 3: Run Dirac source smoke through active tools manually**
+- [x] **Step 3: Run Dirac source smoke through active tools manually**
 
 After reloading pi with the symlinked extension, run these tool calls in-session:
 
@@ -1023,7 +1023,7 @@ Expected:
 - `get_function` resolves suffix names to full names such as `ASTAnchorBridge.getFunctions`.
 - Output contains stable anchors and function hashes.
 
-- [ ] **Step 4: Commit docs and plan checkbox updates**
+- [x] **Step 4: Commit docs and plan checkbox updates**
 
 ```bash
 git add README.md docs/superpowers/plans/2026-05-08-phase-1-tree-sitter-ast.md
