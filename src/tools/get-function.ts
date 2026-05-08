@@ -12,13 +12,53 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function pythonCodeBeforeInlineComment(line: string): string {
+  let quote: "'" | '"' | undefined;
+  let escaped = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (char === quote) quote = undefined;
+      continue;
+    }
+
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+    if (char === "#") return line.slice(0, i);
+  }
+
+  return line;
+}
+
+function isPythonHeaderComplete(line: string): boolean {
+  return pythonCodeBeforeInlineComment(line).trimEnd().endsWith(":");
+}
+
+function hasPythonInlineBody(line: string): boolean {
+  const code = pythonCodeBeforeInlineComment(line);
+  const colonIndex = code.lastIndexOf(":");
+  return colonIndex !== -1 && code.slice(colonIndex + 1).trim().length > 0;
+}
+
 function hasPythonMultilineClassContext(lines: string[], start: number, escapedName: string): boolean {
   const classHeader = new RegExp(`^\\s*class\\s+${escapedName}\\b[^{}:]*\\(`);
   if (!classHeader.test(lines[start])) return false;
 
   let parenDepth = 0;
   for (let i = start; i < lines.length; i++) {
-    const code = lines[i].split("#", 1)[0] ?? "";
+    const code = pythonCodeBeforeInlineComment(lines[i]);
     if (code.includes("{")) return false;
 
     for (const char of code) {
@@ -26,7 +66,7 @@ function hasPythonMultilineClassContext(lines: string[], start: number, escapedN
       if (char === ")") parenDepth--;
     }
 
-    if (parenDepth <= 0) return code.trimEnd().endsWith(":");
+    if (parenDepth <= 0) return isPythonHeaderComplete(lines[i]);
   }
 
   return false;
@@ -125,8 +165,8 @@ function isOneLineExpressionArrow(line: string): boolean {
 function findPythonRange(lines: string[], start: number): [number, number] {
   const baseIndent = lines[start].match(/^\s*/)?.[0].length ?? 0;
   let end = start;
-  let headerComplete = lines[start].trimEnd().endsWith(":");
-  let bodyBegun = headerComplete && /:\s*\S/.test(lines[start]);
+  let headerComplete = isPythonHeaderComplete(lines[start]);
+  let bodyBegun = headerComplete && hasPythonInlineBody(lines[start]);
 
   for (let i = start + 1; i < lines.length; i++) {
     const line = lines[i];
@@ -140,7 +180,7 @@ function findPythonRange(lines: string[], start: number): [number, number] {
 
     end = i;
     if (!headerComplete) {
-      headerComplete = line.trimEnd().endsWith(":");
+      headerComplete = isPythonHeaderComplete(line);
       continue;
     }
     if (indent > baseIndent) bodyBegun = true;

@@ -261,12 +261,12 @@ describe("AST read tools", () => {
   it("stops Python ranges before top-level assignment or call after function/class", async () => {
     const cwd = await createTempDir();
     const source = [
-      "def compute():",
+      "def compute():  # inline header comment",
       "    return 1",
       "x = 2",
       "print(compute())",
       "",
-      "class Widget:",
+      "class Widget:  # inline class comment",
       "    def run(self):",
       "        return 3",
       "log(Widget)",
@@ -286,7 +286,7 @@ describe("AST read tools", () => {
     const functionText = functionResult.content[0]?.type === "text" ? functionResult.content[0].text : "";
 
     expect(functionText).toContain("sample.py::compute");
-    expect(functionText).toContain("def compute():");
+    expect(functionText).toContain("def compute():  # inline header comment");
     expect(functionText).toContain("    return 1");
     expect(functionText).not.toContain("x = 2");
     expect(functionText).not.toContain("print(compute())");
@@ -301,7 +301,7 @@ describe("AST read tools", () => {
     const classText = classResult.content[0]?.type === "text" ? classResult.content[0].text : "";
 
     expect(classText).toContain("sample.py::Widget");
-    expect(classText).toContain("class Widget:");
+    expect(classText).toContain("class Widget:  # inline class comment");
     expect(classText).toContain("        return 3");
     expect(classText).not.toContain("log(Widget)");
     expect(classText).not.toContain("def after():");
