@@ -62,6 +62,10 @@ async function initializeParser(): Promise<void> {
         if (fs.existsSync(localPath)) return localPath;
         const realLocalPath = path.join(realDirname, scriptName);
         if (fs.existsSync(realLocalPath)) return realLocalPath;
+        const packageLocalPath = path.join(__dirname, "..", "..", "node_modules", "web-tree-sitter", scriptName);
+        if (fs.existsSync(packageLocalPath)) return packageLocalPath;
+        const realPackageLocalPath = path.join(realDirname, "..", "..", "node_modules", "web-tree-sitter", scriptName);
+        if (fs.existsSync(realPackageLocalPath)) return realPackageLocalPath;
         return path.join(process.cwd(), "node_modules", "web-tree-sitter", scriptName);
       },
     }).then(() => {

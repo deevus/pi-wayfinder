@@ -103,4 +103,58 @@ describe("tree-sitter AST read tool integration", () => {
     expect(text).toContain("DiracD│  }");
     expect(text).not.toContain("const helper = () => 2;");
   });
+
+  it("returns JavaScript class methods in file skeletons through the pi tool", async () => {
+    const cwd = await createTempDir();
+    const source = [
+      "class Service {",
+      "  run() {",
+      "    return 1;",
+      "  }",
+      "}",
+      "",
+      "const helper = () => 2;",
+    ].join("\n");
+    await writeFile(join(cwd, "sample.js"), source, "utf8");
+
+    const tool = registerSkeletonToolForTest();
+    const result = await tool.execute("call-3", { paths: ["sample.js"] }, undefined, undefined, { cwd } as never);
+    const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+
+    expect(text).toContain("--- sample.js ---");
+    expect(text).toContain("DiracA│class Service {");
+    expect(text).toContain("DiracB│  run() {");
+    expect(text).toContain("DiracG│const helper = () => 2;");
+    expect(text).not.toContain("return 1;");
+  });
+
+  it("extracts JavaScript class methods by suffix name through the pi tool", async () => {
+    const cwd = await createTempDir();
+    const source = [
+      "class Service {",
+      "  run() {",
+      "    return 1;",
+      "  }",
+      "}",
+      "",
+      "const helper = () => 2;",
+    ].join("\n");
+    await writeFile(join(cwd, "sample.js"), source, "utf8");
+
+    const tool = registerFunctionToolForTest();
+    const result = await tool.execute(
+      "call-4",
+      { paths: ["sample.js"], function_names: ["run"] },
+      undefined,
+      undefined,
+      { cwd } as never,
+    );
+    const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+
+    expect(text).toContain("sample.js::Service.run");
+    expect(text).toContain("DiracB│  run() {");
+    expect(text).toContain("DiracC│    return 1;");
+    expect(text).toContain("DiracD│  }");
+    expect(text).not.toContain("const helper = () => 2;");
+  });
 });

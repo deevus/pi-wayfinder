@@ -17,6 +17,23 @@ describe("tree-sitter language parser loader", () => {
     await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
   });
 
+  it("loads parser init assets when cwd has no node_modules", async () => {
+    const cwd = await createTempDir();
+    const tsPath = join(cwd, "sample.ts");
+    await writeFile(tsPath, "export function greet() { return 'hi'; }", "utf8");
+
+    const previousCwd = process.cwd();
+    process.chdir(cwd);
+    try {
+      const parsers = await loadRequiredLanguageParsers([tsPath]);
+
+      expect(parsers.ts?.parser).toBeDefined();
+      expect(parsers.ts?.query).toBeDefined();
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
+
   it("loads TypeScript and Python parsers once requested", async () => {
     const cwd = await createTempDir();
     const tsPath = join(cwd, "sample.ts");
@@ -30,6 +47,15 @@ describe("tree-sitter language parser loader", () => {
     expect(parsers.ts?.query).toBeDefined();
     expect(parsers.py?.parser).toBeDefined();
     expect(parsers.py?.query).toBeDefined();
+  });
+
+  it("compiles JavaScript and JSX parsers and queries", async () => {
+    const parsers = await loadRequiredLanguageParsers(["a.js", "a.jsx"]);
+
+    expect(parsers.js?.parser).toBeDefined();
+    expect(parsers.js?.query).toBeDefined();
+    expect(parsers.jsx?.parser).toBeDefined();
+    expect(parsers.jsx?.query).toBeDefined();
   });
 
   it("throws an explicit unsupported-language error", async () => {

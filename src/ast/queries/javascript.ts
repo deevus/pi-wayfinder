@@ -57,7 +57,7 @@ export default `
   (comment)* @doc
   .
   (field_definition
-    name: [(property_identifier) (identifier)] @name.definition.method
+    property: [(property_identifier) (identifier)] @name.definition.method
     value: [(arrow_function) (function_expression)]) @definition.method
   (#strip! @doc "^[\\\\s\\\\*/]+|[\\\\s\\\\*/]+$")
   (#select-adjacent! @doc @definition.method)
