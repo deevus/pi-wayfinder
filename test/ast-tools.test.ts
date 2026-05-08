@@ -224,4 +224,71 @@ describe("AST read tools", () => {
     expect(secondText).toContain("async def second():");
     expect(secondText).not.toContain("def third():");
   });
+
+  it("uses Python indentation ranges for multi-line async def signatures", async () => {
+    const cwd = await createTempDir();
+    const source = [
+      "async def multi_line(",
+      "    first,",
+      "    second,",
+      "):",
+      "    return first + second",
+      "",
+      "def after():",
+      "    return 3"
+    ].join("\n");
+    await writeFile(join(cwd, "sample.py"), source, "utf8");
+
+    const tool = registerFunctionToolForTest();
+    const result = await tool.execute(
+      "call-8",
+      { paths: ["sample.py"], function_names: ["multi_line"] },
+      undefined,
+      undefined,
+      { cwd } as never
+    );
+    const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+
+    expect(text).toContain("sample.py::multi_line");
+    expect(text).toContain("async def multi_line(");
+    expect(text).toContain("    second,");
+    expect(text).toContain("):");
+    expect(text).toContain("    return first + second");
+    expect(text).not.toContain("def after():");
+  });
+
+  it("ignores braces inside JS strings and comments when extracting ranges", async () => {
+    const cwd = await createTempDir();
+    const source = [
+      "export function safeBraces() {",
+      "  const single = '}';",
+      "  const double = \"}\";",
+      "  const template = `}`;",
+      "  // } in a line comment",
+      "  /* { in a block comment",
+      "     } still in a block comment */",
+      "  return { ok: true };",
+      "}",
+      "const leaked = 1;"
+    ].join("\n");
+    await writeFile(join(cwd, "sample.ts"), source, "utf8");
+
+    const tool = registerFunctionToolForTest();
+    const result = await tool.execute(
+      "call-9",
+      { paths: ["sample.ts"], function_names: ["safeBraces"] },
+      undefined,
+      undefined,
+      { cwd } as never
+    );
+    const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+
+    expect(text).toContain("sample.ts::safeBraces");
+    expect(text).toContain("const single = '}';");
+    expect(text).toContain('const double = "}";');
+    expect(text).toContain("const template = `}`;");
+    expect(text).toContain("return { ok: true };");
+    expect(text).toContain("DiracI│}");
+    expect(text).not.toContain("const leaked = 1;");
+  });
 });

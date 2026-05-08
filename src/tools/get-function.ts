@@ -14,18 +14,82 @@ function escapeRegExp(value: string): string {
 }
 
 function isPythonStartLine(line: string, escapedName: string): boolean {
-  return new RegExp(
-    `^\\s*(async\\s+)?def\\s+${escapedName}\\b.*:\\s*(#.*)?$|^\\s*class\\s+${escapedName}\\b.*:\\s*(#.*)?$`
-  ).test(line);
+  return new RegExp(`^\\s*(async\\s+)?def\\s+${escapedName}\\b|^\\s*class\\s+${escapedName}\\b`).test(line);
 }
 
-function countBraceDelta(line: string): number {
+type BraceCounterState = {
+  mode: "code" | "single" | "double" | "template" | "blockComment";
+  escaped: boolean;
+};
+
+function countBraceDelta(line: string, state: BraceCounterState): { delta: number; sawOpeningBrace: boolean } {
   let delta = 0;
-  for (const char of line) {
-    if (char === "{") delta++;
+  let sawOpeningBrace = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (state.mode === "blockComment") {
+      if (char === "*" && next === "/") {
+        state.mode = "code";
+        i++;
+      }
+      continue;
+    }
+
+    if (state.mode === "single" || state.mode === "double" || state.mode === "template") {
+      if (state.escaped) {
+        state.escaped = false;
+        continue;
+      }
+
+      if (char === "\\") {
+        state.escaped = true;
+        continue;
+      }
+
+      if (
+        (state.mode === "single" && char === "'") ||
+        (state.mode === "double" && char === '"') ||
+        (state.mode === "template" && char === "`")
+      ) {
+        state.mode = "code";
+      }
+      continue;
+    }
+
+    if (char === "/" && next === "/") break;
+    if (char === "/" && next === "*") {
+      state.mode = "blockComment";
+      i++;
+      continue;
+    }
+    if (char === "'") {
+      state.mode = "single";
+      state.escaped = false;
+      continue;
+    }
+    if (char === '"') {
+      state.mode = "double";
+      state.escaped = false;
+      continue;
+    }
+    if (char === "`") {
+      state.mode = "template";
+      state.escaped = false;
+      continue;
+    }
+
+    if (char === "{") {
+      delta++;
+      sawOpeningBrace = true;
+    }
     if (char === "}") delta--;
   }
-  return delta;
+
+  if (state.mode === "single" || state.mode === "double") state.escaped = false;
+  return { delta, sawOpeningBrace };
 }
 
 function isOneLineExpressionArrow(line: string): boolean {
@@ -60,11 +124,13 @@ function findJsTsRange(lines: string[], start: number): [number, number] {
 
   let depth = 0;
   let sawBody = false;
+  const braceState: BraceCounterState = { mode: "code", escaped: false };
 
   for (let i = start; i < lines.length; i++) {
     const line = lines[i];
-    if (line.includes("{")) sawBody = true;
-    depth += countBraceDelta(line);
+    const { delta, sawOpeningBrace } = countBraceDelta(line, braceState);
+    if (sawOpeningBrace) sawBody = true;
+    depth += delta;
 
     if (sawBody && depth <= 0) return [start, i];
 
