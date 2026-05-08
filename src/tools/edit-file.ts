@@ -19,6 +19,14 @@ interface ResolvedEdit {
   end: number;
 }
 
+function detectLineEnding(content: string): "\r\n" | "\n" {
+  return content.match(/\r\n|\n/)?.[0] === "\r\n" ? "\r\n" : "\n";
+}
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) throw signal.reason ?? new Error("edit_file aborted");
+}
+
 function resolveAnchor(rawAnchor: string | undefined, anchors: string[], lines: string[], fieldName = "anchor"): number {
   if (!rawAnchor) throw new Error(`${fieldName} is missing`);
   if (!rawAnchor.includes(ANCHOR_DELIMITER)) {
@@ -77,25 +85,37 @@ export function registerEditFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
       "Use edit_file for source-code edits after reading anchors with read_file, get_function, or get_file_skeleton."
     ],
     parameters: EditFileSchema,
-    async execute(_id, params, _signal, _onUpdate, ctx) {
+    async execute(_id, params, signal, _onUpdate, ctx) {
       const summaries: string[] = [];
 
       for (const file of params.files) {
+        throwIfAborted(signal);
         const absolutePath = resolve(ctx.cwd, file.path.replace(/^@/, ""));
         await withFileMutationQueue(absolutePath, async () => {
-          const content = await readFile(absolutePath, "utf8");
+          throwIfAborted(signal);
+          const content = await readFile(absolutePath, { encoding: "utf8", signal });
+          throwIfAborted(signal);
+
+          const lineEnding = detectLineEnding(content);
           const lines = content.split(/\r?\n/);
           const currentAnchors = anchors.reconcile(absolutePath, lines);
+
+          throwIfAborted(signal);
           const nextLines = applyAnchoredEdits(lines, currentAnchors, file.edits);
-          const nextContent = nextLines.join("\n");
+          throwIfAborted(signal);
+          const nextContent = nextLines.join(lineEnding);
 
           if (ctx.hasUI) {
-            const ok = await ctx.ui.confirm("Apply Dirac edit?", `File: ${file.path}\nEdits: ${file.edits.length}`);
+            throwIfAborted(signal);
+            const ok = await ctx.ui.confirm("Apply Dirac edit?", `File: ${file.path}\nEdits: ${file.edits.length}`, { signal });
+            throwIfAborted(signal);
             if (!ok) throw new Error(`User rejected edits for ${file.path}`);
           }
 
+          throwIfAborted(signal);
           await mkdir(dirname(absolutePath), { recursive: true });
-          await writeFile(absolutePath, nextContent, "utf8");
+          throwIfAborted(signal);
+          await writeFile(absolutePath, nextContent, { encoding: "utf8", signal });
           anchors.reconcile(absolutePath, nextLines);
           summaries.push(`Updated ${file.path}: ${file.edits.length} anchored edit(s).`);
         });
