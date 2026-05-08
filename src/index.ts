@@ -3,12 +3,16 @@ import { AnchorStateManager } from "./anchors/AnchorStateManager.js";
 import { activeToolsForMode, parseOverrideMode, parseToolMode } from "./mode.js";
 import { getDiracPromptGuidance } from "./prompt.js";
 import { registerEditFileTool } from "./tools/edit-file.js";
+import { registerGetFileSkeletonTool } from "./tools/get-file-skeleton.js";
+import { registerGetFunctionTool } from "./tools/get-function.js";
 import { registerReadFileTool } from "./tools/read-file.js";
 
 export default function diracToolsExtension(pi: ExtensionAPI): void {
   const anchors = new AnchorStateManager();
   registerReadFileTool(pi, anchors);
   registerEditFileTool(pi, anchors);
+  registerGetFileSkeletonTool(pi, anchors);
+  registerGetFunctionTool(pi, anchors);
 
   let baselineActiveTools: string[] | undefined;
 

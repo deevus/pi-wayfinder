@@ -21,3 +21,12 @@ export const EditFileSchema = Type.Object({
     }))
   }))
 });
+
+export const GetFileSkeletonSchema = Type.Object({
+  paths: Type.Array(Type.String())
+});
+
+export const GetFunctionSchema = Type.Object({
+  paths: Type.Array(Type.String()),
+  function_names: Type.Array(Type.String())
+});
