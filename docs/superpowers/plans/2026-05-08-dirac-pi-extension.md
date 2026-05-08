@@ -220,7 +220,7 @@ git commit -m "feat: scaffold pi dirac tools extension"
 - Create: `src/anchors/AnchorStateManager.ts`
 - Create: `test/anchors.test.ts`
 
-- [ ] **Step 1: Port line hashing helpers**
+- [x] **Step 1: Port line hashing helpers**
 
 Create `src/anchors/line-hashing.ts`:
 
@@ -265,7 +265,7 @@ export function stripHashes(content: string): string {
 }
 ```
 
-- [ ] **Step 2: Implement deterministic anchor manager**
+- [x] **Step 2: Implement deterministic anchor manager**
 
 Use deterministic generated words rather than Dirac's bundled dictionary for MVP reproducibility.
 
@@ -343,7 +343,7 @@ export class AnchorStateManager {
 }
 ```
 
-- [ ] **Step 3: Add anchor tests**
+- [x] **Step 3: Add anchor tests**
 
 Create `test/anchors.test.ts`:
 
@@ -369,7 +369,7 @@ it("splits and strips anchor-prefixed lines", () => {
 });
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```bash
 npm test
@@ -377,7 +377,7 @@ npm test
 
 Expected: anchor tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/anchors test/anchors.test.ts
