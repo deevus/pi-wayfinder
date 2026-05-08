@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "diff": "^7.0.0"
+    "diff": "^7.0.0",
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.22.6"
   },
   "devDependencies": {
     "@types/node": "20.x",
