@@ -6,7 +6,6 @@ import { contentHash, formatLineWithHash } from "../anchors/line-hashing.js";
 import { appendOutputLine, appendTruncationNotice, createOutputAccumulator, throwIfAborted } from "./output-limits.js";
 import { GetFunctionSchema } from "./schemas.js";
 
-const NEXT_PYTHON_DEFINITION_LINE = /^(async\s+def|def|class)\b/;
 const NEXT_JS_TS_DEFINITION_LINE = /^(export\s+)?(default\s+)?(async\s+)?(function|class|const)\b/;
 
 function escapeRegExp(value: string): string {
@@ -126,6 +125,8 @@ function isOneLineExpressionArrow(line: string): boolean {
 function findPythonRange(lines: string[], start: number): [number, number] {
   const baseIndent = lines[start].match(/^\s*/)?.[0].length ?? 0;
   let end = start;
+  let headerComplete = lines[start].trimEnd().endsWith(":");
+  let bodyBegun = headerComplete && /:\s*\S/.test(lines[start]);
 
   for (let i = start + 1; i < lines.length; i++) {
     const line = lines[i];
@@ -135,8 +136,14 @@ function findPythonRange(lines: string[], start: number): [number, number] {
     }
 
     const indent = line.match(/^\s*/)?.[0].length ?? 0;
-    if (indent <= baseIndent && NEXT_PYTHON_DEFINITION_LINE.test(line.trim())) break;
+    if (bodyBegun && indent <= baseIndent) break;
+
     end = i;
+    if (!headerComplete) {
+      headerComplete = line.trimEnd().endsWith(":");
+      continue;
+    }
+    if (indent > baseIndent) bodyBegun = true;
   }
 
   return [start, end];

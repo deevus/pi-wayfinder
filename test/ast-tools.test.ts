@@ -258,6 +258,55 @@ describe("AST read tools", () => {
     expect(secondText).not.toContain("def third():");
   });
 
+  it("stops Python ranges before top-level assignment or call after function/class", async () => {
+    const cwd = await createTempDir();
+    const source = [
+      "def compute():",
+      "    return 1",
+      "x = 2",
+      "print(compute())",
+      "",
+      "class Widget:",
+      "    def run(self):",
+      "        return 3",
+      "log(Widget)",
+      "def after():",
+      "    return 4"
+    ].join("\n");
+    await writeFile(join(cwd, "sample.py"), source, "utf8");
+
+    const tool = registerFunctionToolForTest();
+    const functionResult = await tool.execute(
+      "call-11",
+      { paths: ["sample.py"], function_names: ["compute"] },
+      undefined,
+      undefined,
+      { cwd } as never
+    );
+    const functionText = functionResult.content[0]?.type === "text" ? functionResult.content[0].text : "";
+
+    expect(functionText).toContain("sample.py::compute");
+    expect(functionText).toContain("def compute():");
+    expect(functionText).toContain("    return 1");
+    expect(functionText).not.toContain("x = 2");
+    expect(functionText).not.toContain("print(compute())");
+
+    const classResult = await tool.execute(
+      "call-12",
+      { paths: ["sample.py"], function_names: ["Widget"] },
+      undefined,
+      undefined,
+      { cwd } as never
+    );
+    const classText = classResult.content[0]?.type === "text" ? classResult.content[0].text : "";
+
+    expect(classText).toContain("sample.py::Widget");
+    expect(classText).toContain("class Widget:");
+    expect(classText).toContain("        return 3");
+    expect(classText).not.toContain("log(Widget)");
+    expect(classText).not.toContain("def after():");
+  });
+
   it("uses Python indentation ranges for multi-line async def signatures", async () => {
     const cwd = await createTempDir();
     const source = [
