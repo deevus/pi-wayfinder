@@ -548,7 +548,7 @@ git commit -m "feat: add tree-sitter skeleton parser"
 - Create: `src/ast/ast-anchor-bridge.ts`
 - Create: `test/ast-anchor-bridge.test.ts`
 
-- [ ] **Step 1: Write failing bridge tests**
+- [x] **Step 1: Write failing bridge tests**
 
 Create `test/ast-anchor-bridge.test.ts`:
 
@@ -631,7 +631,7 @@ describe("ASTAnchorBridge", () => {
 });
 ```
 
-- [ ] **Step 2: Run bridge tests to verify failure**
+- [x] **Step 2: Run bridge tests to verify failure**
 
 ```bash
 npx vitest run test/ast-anchor-bridge.test.ts
@@ -639,7 +639,7 @@ npx vitest run test/ast-anchor-bridge.test.ts
 
 Expected: FAIL because bridge files do not exist.
 
-- [ ] **Step 3: Implement `symbol-context-resolver.ts`**
+- [x] **Step 3: Implement `symbol-context-resolver.ts`**
 
 Copy/adapt Dirac's `SymbolContextResolver.ts` into `src/ast/symbol-context-resolver.ts` with these import changes:
 
@@ -650,7 +650,7 @@ import Parser, { type QueryCapture, type SyntaxNode } from "web-tree-sitter";
 
 Keep support for `ts`, `tsx`, `js`, `jsx`, `py`, and `java`. Remove `Logger`; catch errors and return `""`.
 
-- [ ] **Step 4: Implement `ast-anchor-bridge.ts`**
+- [x] **Step 4: Implement `ast-anchor-bridge.ts`**
 
 Create `src/ast/ast-anchor-bridge.ts` by adapting Dirac's `ASTAnchorBridge.ts` with this public API:
 
@@ -762,7 +762,7 @@ Important implementation details for `getFunctions`:
 - Format as `relPath::${fullName}\n[Function Hash: ${contentHash(defText)}]\nAll Hash Anchors provided below are stable and can be used with edit_file directly.\n${context}${formatted}`.
 - Return unsupported parse states as Dirac does: `Unsupported file type: ${relPath}`, `Could not parse file: ${relPath}`, or `None of the requested functions (...) were found in ${relPath}`.
 
-- [ ] **Step 5: Verify bridge tests pass**
+- [x] **Step 5: Verify bridge tests pass**
 
 ```bash
 npx vitest run test/ast-anchor-bridge.test.ts
@@ -771,7 +771,7 @@ npm run typecheck
 
 Expected: bridge tests pass and TypeScript compiles.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ast/symbol-context-resolver.ts src/ast/ast-anchor-bridge.ts test/ast-anchor-bridge.test.ts
