@@ -56,7 +56,7 @@ Default: `none`. This avoids surprising users who expect pi's built-ins.
 - Create: `src/mode.ts`
 - Create: `README.md`
 
-- [ ] **Step 1: Create package manifest**
+- [x] **Step 1: Create package manifest**
 
 Create `package.json`:
 
@@ -91,7 +91,7 @@ Create `package.json`:
 }
 ```
 
-- [ ] **Step 2: Implement mode parsing**
+- [x] **Step 2: Implement mode parsing**
 
 Create `src/mode.ts`:
 
@@ -120,7 +120,7 @@ export function activeToolsForMode(mode: DiracToolMode, currentTools: string[]):
 }
 ```
 
-- [ ] **Step 3: Implement extension entrypoint scaffold**
+- [x] **Step 3: Implement extension entrypoint scaffold**
 
 Create `src/index.ts`:
 
@@ -163,7 +163,7 @@ export default function diracToolsExtension(pi: ExtensionAPI): void {
 }
 ```
 
-- [ ] **Step 4: Add usage docs**
+- [x] **Step 4: Add usage docs**
 
 Create `README.md`:
 
@@ -194,7 +194,7 @@ Inside pi:
 ```
 ```
 
-- [ ] **Step 5: Typecheck**
+- [x] **Step 5: Typecheck**
 
 Run:
 
@@ -204,7 +204,7 @@ npm install && npm run typecheck
 
 Expected: TypeScript completes without errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .
