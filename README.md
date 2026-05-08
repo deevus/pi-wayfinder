@@ -35,3 +35,5 @@ Inside pi:
 pi -e . --dirac-tools-mode additive -p "Use read_file on README.md and summarize the first 20 lines."
 pi -e . --dirac-tools-mode replacement -p "Use read_file on README.md and report whether Dirac mentions hash-anchored edits."
 ```
+
+Verification note: On 2026-05-08 during Task 7, package checks plus additive and replacement smoke tests were verified successfully.
