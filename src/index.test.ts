@@ -22,6 +22,7 @@ function createMockPi(initialTools: string[]) {
   ]);
 
   const pi = {
+    registerTool: vi.fn(),
     registerFlag: vi.fn(),
     getFlag: vi.fn((name: string) => flags.get(name)),
     getActiveTools: vi.fn(() => [...activeTools]),
