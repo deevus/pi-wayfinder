@@ -2,8 +2,8 @@ import { Type } from "typebox";
 
 export const ReadFileSchema = Type.Object({
   paths: Type.Array(Type.String(), { description: "Relative or absolute file paths to read" }),
-  start_line: Type.Optional(Type.Number({ description: "1-indexed start line" })),
-  end_line: Type.Optional(Type.Number({ description: "1-indexed end line, inclusive" }))
+  start_line: Type.Optional(Type.Integer({ minimum: 1, description: "1-indexed start line" })),
+  end_line: Type.Optional(Type.Integer({ minimum: 1, description: "1-indexed end line, inclusive" }))
 });
 
 export const EditFileSchema = Type.Object({

@@ -78,4 +78,69 @@ describe("read_file tool", () => {
     expect(text).toContain("DiracB│second");
     expect(result.details).toEqual({ paths: ["@at-path.txt"] });
   });
+
+  it("declares line range parameters as positive integers", () => {
+    const tool = registerToolForTest();
+    const properties = (tool.parameters as { properties: Record<string, { type: string; minimum?: number }> }).properties;
+
+    expect(properties.start_line).toMatchObject({ type: "integer", minimum: 1 });
+    expect(properties.end_line).toMatchObject({ type: "integer", minimum: 1 });
+  });
+
+  it("rejects fractional line ranges", async () => {
+    const cwd = await createTempDir();
+    await writeFile(join(cwd, "sample.txt"), "alpha\nbeta", "utf8");
+
+    const tool = registerToolForTest();
+    await expect(
+      tool.execute("call-3", { paths: ["sample.txt"], start_line: 1.5 }, undefined, undefined, { cwd } as never)
+    ).rejects.toThrow("start_line must be an integer");
+    await expect(
+      tool.execute("call-4", { paths: ["sample.txt"], end_line: 1.5 }, undefined, undefined, { cwd } as never)
+    ).rejects.toThrow("end_line must be an integer");
+  });
+
+  it("rejects invalid line ranges", async () => {
+    const cwd = await createTempDir();
+    await writeFile(join(cwd, "sample.txt"), "alpha\nbeta", "utf8");
+
+    const tool = registerToolForTest();
+    await expect(
+      tool.execute("call-5", { paths: ["sample.txt"], start_line: 2, end_line: 1 }, undefined, undefined, { cwd } as never)
+    ).rejects.toThrow("start_line must be less than or equal to end_line");
+    await expect(
+      tool.execute("call-6", { paths: ["sample.txt"], start_line: 3 }, undefined, undefined, { cwd } as never)
+    ).rejects.toThrow("start_line 3 is beyond end of file (2 lines)");
+  });
+
+  it("truncates large output and appends a notice", async () => {
+    const cwd = await createTempDir();
+    const content = Array.from({ length: 2500 }, (_, index) => `line-${index + 1}`).join("\n");
+    await writeFile(join(cwd, "large.txt"), content, "utf8");
+
+    const tool = registerToolForTest();
+    const result = await tool.execute("call-7", { paths: ["large.txt"] }, undefined, undefined, { cwd } as never);
+    const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+
+    expect(text).toContain("--- large.txt ---");
+    expect(text).toContain(`[File Hash: ${contentHash(content)}]`);
+    expect(text).toContain("line-1998");
+    expect(text).not.toContain("line-2500");
+    expect(text).toContain("[Output truncated: showing the first 2000 lines within 51200 bytes.");
+  });
+
+  it("truncates output that exceeds the byte cap", async () => {
+    const cwd = await createTempDir();
+    const content = "x".repeat(60 * 1024);
+    await writeFile(join(cwd, "huge-line.txt"), content, "utf8");
+
+    const tool = registerToolForTest();
+    const result = await tool.execute("call-8", { paths: ["huge-line.txt"] }, undefined, undefined, { cwd } as never);
+    const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+
+    expect(text).toContain("--- huge-line.txt ---");
+    expect(text).toContain(`[File Hash: ${contentHash(content)}]`);
+    expect(text).not.toContain("DiracA│xxx");
+    expect(text).toContain("[Output truncated: showing the first 2 lines within 51200 bytes.");
+  });
 });
