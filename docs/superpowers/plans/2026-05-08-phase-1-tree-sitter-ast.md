@@ -1023,6 +1023,10 @@ Expected:
 - `get_function` resolves suffix names to full names such as `ASTAnchorBridge.getFunctions`.
 - Output contains stable anchors and function hashes.
 
+Actual verification evidence (2026-05-08):
+- `pi -e .` smoke for `get_file_skeleton` on `/Users/sh/Projects/dirac/src/utils/ASTAnchorBridge.ts` found `getFileSkeleton`, `getFunctions`, `getSymbolRange`, and private static methods.
+- `pi -e .` smoke for `get_function` resolved suffix names to `ASTAnchorBridge.getFunctions` and `ASTAnchorBridge.getExtendedRange`, with anchors and Function Hash in the output.
+
 - [x] **Step 4: Commit docs and plan checkbox updates**
 
 ```bash
