@@ -1,6 +1,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { AnchorStateManager } from "./anchors/AnchorStateManager.js";
 import { activeToolsForMode, parseOverrideMode, parseToolMode } from "./mode.js";
+import { getDiracPromptGuidance } from "./prompt.js";
 import { registerEditFileTool } from "./tools/edit-file.js";
 import { registerReadFileTool } from "./tools/read-file.js";
 
@@ -28,6 +29,11 @@ export default function diracToolsExtension(pi: ExtensionAPI): void {
     description: "Hard override pi built-ins: none, read, or read_edit",
     type: "string",
     default: "none"
+  });
+
+  pi.on("before_agent_start", async (event) => {
+    const mode = parseToolMode(pi.getFlag("dirac-tools-mode"));
+    return { systemPrompt: `${event.systemPrompt}\n\n${getDiracPromptGuidance(mode)}` };
   });
 
   pi.on("session_start", async (_event, ctx) => {
