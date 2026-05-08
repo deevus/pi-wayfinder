@@ -791,7 +791,7 @@ git commit -m "feat: add Dirac prompt guidance and replacement mode docs"
 - Modify: `src/tools/schemas.ts`
 - Create: `test/ast-tools.test.ts`
 
-- [ ] **Step 1: Add schemas**
+- [x] **Step 1: Add schemas**
 
 Append to `src/tools/schemas.ts`:
 
@@ -806,7 +806,7 @@ export const GetFunctionSchema = Type.Object({
 });
 ```
 
-- [ ] **Step 2: Implement regex-based AST MVP**
+- [x] **Step 2: Implement regex-based AST MVP**
 
 For the MVP, implement a conservative parser-free version for TypeScript/JavaScript/Python that extracts common function/class definition lines. Tree-sitter is added after the tool contract is proven.
 
@@ -847,7 +847,7 @@ export function registerGetFileSkeletonTool(pi: ExtensionAPI, anchors: AnchorSta
 }
 ```
 
-- [ ] **Step 3: Implement conservative `get_function` MVP**
+- [x] **Step 3: Implement conservative `get_function` MVP**
 
 Create `src/tools/get-function.ts`:
 
@@ -907,7 +907,7 @@ export function registerGetFunctionTool(pi: ExtensionAPI, anchors: AnchorStateMa
 }
 ```
 
-- [ ] **Step 4: Register AST tools**
+- [x] **Step 4: Register AST tools**
 
 Modify `src/index.ts`:
 
@@ -923,7 +923,7 @@ registerGetFileSkeletonTool(pi, anchors);
 registerGetFunctionTool(pi, anchors);
 ```
 
-- [ ] **Step 5: Test and commit**
+- [x] **Step 5: Test and commit**
 
 ```bash
 npm test && npm run typecheck
