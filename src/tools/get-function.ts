@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { contentHash, formatLineWithHash } from "../anchors/line-hashing.js";
+import { ASTAnchorBridge, type GetFunctionsResult } from "../ast/ast-anchor-bridge.js";
 import { appendOutputLine, appendTruncationNotice, createOutputAccumulator, throwIfAborted } from "./output-limits.js";
 import { GetFunctionSchema } from "./schemas.js";
 
@@ -228,6 +229,40 @@ export function findFunctionRange(lines: string[], name: string): [number, numbe
   return findJsTsRange(lines, start);
 }
 
+export function getRegexFunction(
+  content: string,
+  absolutePath: string,
+  requestedPath: string,
+  name: string,
+  anchors: AnchorStateManager,
+): string {
+  const lines = content.split(/\r?\n/);
+  const lineAnchors = anchors.reconcile(absolutePath, lines);
+  const range = findFunctionRange(lines, name);
+
+  if (!range) return `${requestedPath}::${name}\nNot found.`;
+
+  const [start, end] = range;
+  const body = lines.slice(start, end + 1);
+  const formattedBody = body.map((line, offset) => formatLineWithHash(line, lineAnchors[start + offset])).join("\n");
+  return `${requestedPath}::${name}\n[Function Hash: ${contentHash(body.join("\n"))}]\n${formattedBody}`;
+}
+
+function isFallbackAstResult(result: GetFunctionsResult | null): boolean {
+  if (!result) return true;
+  return (
+    result.formattedContent.startsWith("Unsupported file type:") ||
+    result.formattedContent.startsWith("Could not parse file:")
+  );
+}
+
+function appendText(output: ReturnType<typeof createOutputAccumulator>, text: string): void {
+  const lines = text.replace(/\r?\n$/, "").split(/\r?\n/);
+  for (const line of lines) {
+    if (!appendOutputLine(output, line)) break;
+  }
+}
+
 export function registerGetFunctionTool(pi: ExtensionAPI, anchors: AnchorStateManager): void {
   pi.registerTool({
     name: "get_function",
@@ -241,10 +276,29 @@ export function registerGetFunctionTool(pi: ExtensionAPI, anchors: AnchorStateMa
       for (const requestedPath of params.paths) {
         throwIfAborted(signal, "get_function aborted");
 
-        const absolutePath = resolve(ctx.cwd, requestedPath.replace(/^@/, ""));
+        const normalizedPath = requestedPath.replace(/^@/, "");
+        const absolutePath = resolve(ctx.cwd, normalizedPath);
+
+        let astResult: GetFunctionsResult | null = null;
+        try {
+          astResult = await ASTAnchorBridge.getFunctions(absolutePath, requestedPath, params.function_names, anchors);
+        } catch {
+          astResult = null;
+        }
+        throwIfAborted(signal, "get_function aborted");
+
+        if (astResult && !isFallbackAstResult(astResult)) {
+          if (hasOutput) {
+            appendOutputLine(output, "");
+            appendOutputLine(output, "---");
+            appendOutputLine(output, "");
+          }
+          appendText(output, astResult.formattedContent);
+          hasOutput = true;
+          continue;
+        }
+
         const content = await readFile(absolutePath, { encoding: "utf8", signal });
-        const lines = content.split(/\r?\n/);
-        const lineAnchors = anchors.reconcile(absolutePath, lines);
 
         for (const name of params.function_names) {
           throwIfAborted(signal, "get_function aborted");
@@ -255,28 +309,14 @@ export function registerGetFunctionTool(pi: ExtensionAPI, anchors: AnchorStateMa
             appendOutputLine(output, "");
           }
 
-          const range = findFunctionRange(lines, name);
-          if (!range) {
-            appendOutputLine(output, `${requestedPath}::${name}`);
-            appendOutputLine(output, "Not found.");
-            hasOutput = true;
-            continue;
-          }
-
-          const [start, end] = range;
-          const body = lines.slice(start, end + 1);
-          appendOutputLine(output, `${requestedPath}::${name}`);
-          appendOutputLine(output, `[Function Hash: ${contentHash(body.join("\n"))}]`);
-          for (let offset = 0; offset < body.length; offset++) {
-            if (!appendOutputLine(output, formatLineWithHash(body[offset], lineAnchors[start + offset]))) break;
-          }
+          appendText(output, getRegexFunction(content, absolutePath, requestedPath, name, anchors));
           hasOutput = true;
         }
       }
 
       return {
         content: [{ type: "text", text: appendTruncationNotice(output.parts.join(""), output) }],
-        details: { paths: params.paths, function_names: params.function_names }
+        details: { paths: params.paths, function_names: params.function_names },
       };
     }
   });

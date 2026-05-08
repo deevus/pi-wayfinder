@@ -37,3 +37,9 @@ pi -e . --dirac-tools-mode replacement -p "Use read_file on README.md and report
 ```
 
 Verification note: On 2026-05-08 during Task 7, package checks plus additive and replacement smoke tests were verified successfully.
+
+## Tree-sitter AST tools
+
+`get_file_skeleton` and `get_function` use Dirac-style tree-sitter parsing for supported source files. Supported extensions include `ts`, `tsx`, `js`, `jsx`, `py`, `rs`, `go`, `c`, `h`, `cpp`, `hpp`, `cs`, `rb`, `java`, `php`, `swift`, and `kt`.
+
+For unsupported languages or parser load failures, the tools fall back to the conservative regex MVP for common JavaScript, TypeScript, and Python top-level definitions.
