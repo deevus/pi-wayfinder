@@ -320,7 +320,7 @@ git commit -m "feat: add tree-sitter parser loader"
 - Create: `src/ast/parse-file.ts`
 - Create: `test/ast-parse-file.test.ts`
 
-- [ ] **Step 1: Write failing skeleton parser tests**
+- [x] **Step 1: Write failing skeleton parser tests**
 
 Create `test/ast-parse-file.test.ts`:
 
@@ -388,7 +388,7 @@ describe("parseFile", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```bash
 npx vitest run test/ast-parse-file.test.ts
@@ -396,7 +396,7 @@ npx vitest run test/ast-parse-file.test.ts
 
 Expected: FAIL because `src/ast/parse-file.ts` does not exist.
 
-- [ ] **Step 3: Implement `parseFile`**
+- [x] **Step 3: Implement `parseFile`**
 
 Create `src/ast/parse-file.ts` by adapting Dirac's `src/services/tree-sitter/index.ts`. Use this public shape:
 
@@ -523,7 +523,7 @@ function isCallNode(node: Parser.SyntaxNode): boolean {
 }
 ```
 
-- [ ] **Step 4: Verify skeleton parser tests pass**
+- [x] **Step 4: Verify skeleton parser tests pass**
 
 ```bash
 npx vitest run test/ast-parse-file.test.ts
@@ -532,7 +532,7 @@ npm run typecheck
 
 Expected: tests pass and TypeScript compiles.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ast/parse-file.ts test/ast-parse-file.test.ts
