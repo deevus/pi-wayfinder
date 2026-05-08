@@ -31,23 +31,25 @@ export default function diracToolsExtension(pi: ExtensionAPI): void {
     default: "none"
   });
 
+  let currentMode = parseToolMode(pi.getFlag("dirac-tools-mode"));
+
   pi.on("before_agent_start", async (event) => {
-    const mode = parseToolMode(pi.getFlag("dirac-tools-mode"));
-    return { systemPrompt: `${event.systemPrompt}\n\n${getDiracPromptGuidance(mode)}` };
+    return { systemPrompt: `${event.systemPrompt}\n\n${getDiracPromptGuidance(currentMode)}` };
   });
 
   pi.on("session_start", async (_event, ctx) => {
     baselineActiveTools = [...pi.getActiveTools()];
-    const mode = parseToolMode(pi.getFlag("dirac-tools-mode"));
-    const active = activeToolsForMode(mode, baselineActiveTools);
+    currentMode = parseToolMode(pi.getFlag("dirac-tools-mode"));
+    const active = activeToolsForMode(currentMode, baselineActiveTools);
     pi.setActiveTools(active);
-    ctx.ui.setStatus("dirac-tools", `dirac:${mode}`);
+    ctx.ui.setStatus("dirac-tools", `dirac:${currentMode}`);
   });
 
   pi.registerCommand("dirac-tools", {
     description: "Switch Dirac tool mode: additive, preferred, replacement",
     handler: async (args, ctx) => {
       const mode = parseToolMode(args.trim());
+      currentMode = mode;
       pi.setActiveTools(activeToolsForMode(mode, getBaselineActiveTools()));
       ctx.ui.setStatus("dirac-tools", `dirac:${mode}`);
       ctx.ui.notify(`Dirac tools mode set to ${mode}`, "info");

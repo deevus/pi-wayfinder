@@ -10,11 +10,13 @@ type UiContext = {
 };
 
 type SessionStartHandler = (event: unknown, ctx: UiContext) => Promise<void> | void;
+type BeforeAgentStartHandler = (event: { systemPrompt: string }) => Promise<{ systemPrompt: string }> | { systemPrompt: string };
 type CommandHandler = (args: string, ctx: UiContext) => Promise<void> | void;
 
 function createMockPi(initialTools: string[]) {
   let activeTools = [...initialTools];
   let sessionStartHandler: SessionStartHandler | undefined;
+  let beforeAgentStartHandler: BeforeAgentStartHandler | undefined;
   const commands = new Map<string, { handler: CommandHandler }>();
   const flags = new Map<string, string>([
     ["dirac-tools-mode", "preferred"],
@@ -29,8 +31,9 @@ function createMockPi(initialTools: string[]) {
     setActiveTools: vi.fn((tools: string[]) => {
       activeTools = [...tools];
     }),
-    on: vi.fn((event: string, handler: SessionStartHandler) => {
-      if (event === "session_start") sessionStartHandler = handler;
+    on: vi.fn((event: string, handler: SessionStartHandler | BeforeAgentStartHandler) => {
+      if (event === "session_start") sessionStartHandler = handler as SessionStartHandler;
+      if (event === "before_agent_start") beforeAgentStartHandler = handler as BeforeAgentStartHandler;
     }),
     registerCommand: vi.fn((name: string, command: { handler: CommandHandler }) => {
       commands.set(name, command);
@@ -42,6 +45,9 @@ function createMockPi(initialTools: string[]) {
     commands,
     get sessionStartHandler() {
       return sessionStartHandler;
+    },
+    get beforeAgentStartHandler() {
+      return beforeAgentStartHandler;
     },
     get activeTools() {
       return activeTools;
@@ -104,5 +110,22 @@ describe("diracToolsExtension", () => {
       "get_file_skeleton",
       "get_function"
     ]);
+  });
+
+  it("uses command-selected mode for injected prompt guidance", async () => {
+    const mock = createMockPi(["read", "edit"]);
+    const ctx = createContext();
+
+    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
+
+    expect(mock.beforeAgentStartHandler).toBeDefined();
+    const command = mock.commands.get("dirac-tools");
+    expect(command).toBeDefined();
+
+    await command?.handler("replacement", ctx);
+    const result = await mock.beforeAgentStartHandler?.({ systemPrompt: "base" });
+
+    expect(result?.systemPrompt).toContain("Replacement mode is active.");
+    expect(result?.systemPrompt).not.toContain("Preferred mode is active.");
   });
 });
