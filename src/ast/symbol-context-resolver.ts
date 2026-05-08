@@ -47,12 +47,13 @@ export class SymbolContextResolver {
       const captures = query.captures(rootNode);
 
       const usedIdentifiers = SymbolContextResolver.getUsedIdentifiers(node);
+      const memberPropertyNames = SymbolContextResolver.getMemberPropertyNames(node);
       const relevantImports = SymbolContextResolver.getRelevantImports(
         captures,
         usedIdentifiers,
         queryStrings.importCaptureName,
       );
-      const classContext = SymbolContextResolver.getClassContext(node, captures, usedIdentifiers, queryStrings);
+      const classContext = SymbolContextResolver.getClassContext(node, captures, memberPropertyNames, queryStrings);
 
       return SymbolContextResolver.assembleContext(relevantImports, classContext, fileContent, anchors, maxContextLines);
     } catch {
@@ -146,6 +147,24 @@ export class SymbolContextResolver {
     return identifiers;
   }
 
+  private static getMemberPropertyNames(node: SyntaxNode): Set<string> {
+    const propertyNames = new Set<string>();
+    const walk = (n: SyntaxNode): void => {
+      const objectNode = n.childForFieldName("object");
+      const propertyNode = n.childForFieldName("property") || n.childForFieldName("attribute");
+      if (objectNode && propertyNode && (objectNode.text === "this" || objectNode.text === "self")) {
+        propertyNames.add(propertyNode.text);
+      }
+
+      for (let i = 0; i < n.childCount; i++) {
+        const child = n.child(i);
+        if (child) walk(child);
+      }
+    };
+    walk(node);
+    return propertyNames;
+  }
+
   private static getRelevantImports(
     captures: QueryCapture[],
     usedIdentifiers: Set<string>,
@@ -153,24 +172,37 @@ export class SymbolContextResolver {
   ): SyntaxNode[] {
     const relevant: SyntaxNode[] = [];
     for (const capture of captures) {
-      if (capture.name === importCaptureName) {
-        const importText = capture.node.text;
-        for (const id of usedIdentifiers) {
-          const regex = new RegExp(`\\b${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
-          if (regex.test(importText)) {
-            relevant.push(capture.node);
-            break;
-          }
+      if (capture.name !== importCaptureName) continue;
+
+      const importedIdentifiers = SymbolContextResolver.getImportIdentifiers(capture.node);
+      for (const id of usedIdentifiers) {
+        if (importedIdentifiers.has(id)) {
+          relevant.push(capture.node);
+          break;
         }
       }
     }
     return relevant;
   }
 
+  private static getImportIdentifiers(importNode: SyntaxNode): Set<string> {
+    const identifiers = new Set<string>();
+    const walk = (n: SyntaxNode): void => {
+      if (n.type === "string" || n.type === "string_fragment" || n.type === "comment" || n.type.includes("comment")) return;
+      if (n.type.includes("identifier")) identifiers.add(n.text);
+      for (let i = 0; i < n.childCount; i++) {
+        const child = n.child(i);
+        if (child) walk(child);
+      }
+    };
+    walk(importNode);
+    return identifiers;
+  }
+
   private static getClassContext(
     node: SyntaxNode,
     captures: QueryCapture[],
-    usedIdentifiers: Set<string>,
+    memberPropertyNames: Set<string>,
     queryStrings: ContextQueryStrings,
   ): { classNode: SyntaxNode; propertyNodes: SyntaxNode[] } | null {
     let parent = node.parent;
@@ -183,6 +215,7 @@ export class SymbolContextResolver {
 
     for (const capture of captures) {
       if (!queryStrings.propertyCaptureNames.includes(capture.name)) continue;
+      if (SymbolContextResolver.isSameNodeOrRange(capture.node, node)) continue;
 
       let propertyParent = capture.node.parent;
       let belongsToClass = false;
@@ -216,10 +249,14 @@ export class SymbolContextResolver {
         nameNode = findName(capture.node);
       }
 
-      if (nameNode && usedIdentifiers.has(nameNode.text)) propertyNodes.push(capture.node);
+      if (nameNode && memberPropertyNames.has(nameNode.text)) propertyNodes.push(capture.node);
     }
 
     return { classNode, propertyNodes };
+  }
+
+  private static isSameNodeOrRange(a: SyntaxNode, b: SyntaxNode): boolean {
+    return a.id === b.id || (a.startIndex === b.startIndex && a.endIndex === b.endIndex);
   }
 
   private static assembleContext(

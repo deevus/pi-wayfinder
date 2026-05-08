@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { AnchorStateManager } from "../src/anchors/AnchorStateManager.js";
+import { contentHash } from "../src/anchors/line-hashing.js";
 import { ASTAnchorBridge } from "../src/ast/ast-anchor-bridge.js";
 
 const tempDirs: string[] = [];
@@ -72,5 +73,98 @@ describe("ASTAnchorBridge", () => {
 
     expect(result?.formattedContent).toContain("DiracA│/** Docs for helper */");
     expect(result?.formattedContent).toContain("DiracB│export function helper() {");
+  });
+
+  it("does not include non-adjacent previous comments in function ranges or hashes", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    const functionText = [
+      "export function helper() {",
+      "  return 1;",
+      "}"
+    ].join("\n");
+    await writeFile(filePath, [
+      "// Detached docs",
+      "",
+      functionText
+    ].join("\n"), "utf8");
+
+    const result = await ASTAnchorBridge.getFunctions(filePath, "sample.ts", ["helper"], new AnchorStateManager());
+
+    expect(result?.formattedContent).not.toContain("DiracA│// Detached docs");
+    expect(result?.formattedContent).toContain("DiracC│export function helper() {");
+    expect(result?.formattedContent).toContain(`[Function Hash: ${contentHash(functionText)}]`);
+  });
+
+  it("adds class property context only for this/self member usage and avoids unrelated imports", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, [
+      "import { dep } from './dep';",
+      "import { unused } from './used';",
+      "",
+      "class Service {",
+      "  used = 1;",
+      "  value = 2;",
+      "  run(value: number) {",
+      "    const local = value;",
+      "    return dep(this.used + local);",
+      "  }",
+      "}"
+    ].join("\n"), "utf8");
+
+    const result = await ASTAnchorBridge.getFunctions(filePath, "sample.ts", ["run"], new AnchorStateManager());
+
+    expect(result?.formattedContent).toContain("DiracA│import { dep } from './dep';");
+    expect(result?.formattedContent).not.toContain("DiracB│import { unused } from './used';");
+    expect(result?.formattedContent).toContain("DiracE│  used = 1;");
+    expect(result?.formattedContent).not.toContain("DiracF│  value = 2;");
+  });
+
+  it("does not duplicate target class fields while collecting context", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, [
+      "class Service {",
+      "  run = () => this.used;",
+      "  used = 1;",
+      "}"
+    ].join("\n"), "utf8");
+
+    const result = await ASTAnchorBridge.getFunctions(filePath, "sample.ts", ["run"], new AnchorStateManager());
+    const marker = "│  run = () => this.used";
+
+    expect(result?.formattedContent.split(marker).length).toBe(2);
+    expect(result?.formattedContent).toContain("DiracC│  used = 1;");
+  });
+
+  it("returns symbol ranges with adjacent comments, nameText, and no detached comments", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    const source = [
+      "class Service {",
+      "  // method docs",
+      "  run() {",
+      "    return 1;",
+      "  }",
+      "}",
+      "",
+      "// detached docs",
+      "",
+      "export function helper() {",
+      "  return 2;",
+      "}"
+    ].join("\n");
+    await writeFile(filePath, source, "utf8");
+
+    const anchors = new AnchorStateManager();
+    const methodRange = await ASTAnchorBridge.getSymbolRange(filePath, "run", anchors, "method");
+    const functionRange = await ASTAnchorBridge.getSymbolRange(filePath, "helper", anchors, "function");
+
+    expect(methodRange?.nameText).toBe("run");
+    expect(methodRange && source.slice(methodRange.startIndex, methodRange.endIndex)).toContain("  // method docs");
+    expect(functionRange?.nameText).toBe("helper");
+    expect(functionRange && source.slice(functionRange.startIndex, functionRange.endIndex)).not.toContain("// detached docs");
+    expect(functionRange && source.slice(functionRange.startIndex, functionRange.endIndex)).toContain("export function helper() {");
   });
 });

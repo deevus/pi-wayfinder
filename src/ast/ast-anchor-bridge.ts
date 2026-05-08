@@ -301,10 +301,11 @@ export class ASTAnchorBridge {
     while (currentNode.previousNamedSibling) {
       const prev = currentNode.previousNamedSibling;
       if (
-        prev.type === "comment" ||
-        prev.type === "decorator" ||
-        prev.type === "attribute" ||
-        prev.type.includes("comment")
+        prev.endPosition.row === startLine - 1 &&
+        (prev.type === "comment" ||
+          prev.type === "decorator" ||
+          prev.type === "attribute" ||
+          prev.type.includes("comment"))
       ) {
         startIndex = prev.startIndex;
         startLine = prev.startPosition.row;
