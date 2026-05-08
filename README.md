@@ -28,3 +28,10 @@ Inside pi:
 /dirac-tools preferred
 /dirac-tools replacement
 ```
+
+## Smoke tests
+
+```bash
+pi -e . --dirac-tools-mode additive -p "Use read_file on README.md and summarize the first 20 lines."
+pi -e . --dirac-tools-mode replacement -p "Use read_file on README.md and report whether Dirac mentions hash-anchored edits."
+```
