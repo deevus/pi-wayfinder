@@ -788,7 +788,7 @@ git commit -m "feat: add AST anchor bridge"
 - Modify: `test/ast-tools.test.ts`
 - Create: `test/ast-tools-tree-sitter.test.ts`
 
-- [ ] **Step 1: Add integration tests that prove method extraction works through the pi tool**
+- [x] **Step 1: Add integration tests that prove method extraction works through the pi tool**
 
 Create `test/ast-tools-tree-sitter.test.ts`:
 
@@ -867,7 +867,7 @@ describe("tree-sitter backed AST pi tools", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify failure before integration**
+- [x] **Step 2: Run tests to verify failure before integration**
 
 ```bash
 npx vitest run test/ast-tools-tree-sitter.test.ts
@@ -875,7 +875,7 @@ npx vitest run test/ast-tools-tree-sitter.test.ts
 
 Expected: at least method extraction expectations fail with current regex tools.
 
-- [ ] **Step 3: Keep regex helpers as fallback functions**
+- [x] **Step 3: Keep regex helpers as fallback functions**
 
 In `src/tools/get-file-skeleton.ts`, extract existing regex logic into:
 
@@ -905,7 +905,7 @@ function getRegexFunction(content: string, absolutePath: string, requestedPath: 
 }
 ```
 
-- [ ] **Step 4: Delegate skeleton tool to AST bridge**
+- [x] **Step 4: Delegate skeleton tool to AST bridge**
 
 Update `registerGetFileSkeletonTool` execute body:
 
@@ -932,7 +932,7 @@ if (skeletonText) {
 
 Keep abort checks and output truncation.
 
-- [ ] **Step 5: Delegate function tool to AST bridge**
+- [x] **Step 5: Delegate function tool to AST bridge**
 
 Update `registerGetFunctionTool` execute body per file:
 
@@ -965,7 +965,7 @@ for (const name of params.function_names) {
 
 If AST returns `None of the requested functions (...) were found`, return that instead of regex fallback for supported files. Use regex fallback only for unsupported languages or parse failure.
 
-- [ ] **Step 6: Verify integration tests and old tests pass**
+- [x] **Step 6: Verify integration tests and old tests pass**
 
 ```bash
 npx vitest run test/ast-tools-tree-sitter.test.ts test/ast-tools.test.ts
@@ -974,7 +974,7 @@ npm run typecheck
 
 Expected: all AST tool tests pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/tools/get-file-skeleton.ts src/tools/get-function.ts test/ast-tools.test.ts test/ast-tools-tree-sitter.test.ts
