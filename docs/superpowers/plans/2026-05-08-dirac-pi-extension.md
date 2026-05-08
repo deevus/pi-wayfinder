@@ -540,7 +540,7 @@ git commit -m "feat: add anchored read_file tool"
 - Modify: `src/mode.ts`
 - Create: `test/edit-file.test.ts`
 
-- [ ] **Step 1: Implement anchor resolution and edit application**
+- [x] **Step 1: Implement anchor resolution and edit application**
 
 Create `src/tools/edit-file.ts` with these exported helpers and tool registration:
 
@@ -629,7 +629,7 @@ export function registerEditFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
 }
 ```
 
-- [ ] **Step 2: Register `edit_file`**
+- [x] **Step 2: Register `edit_file`**
 
 Modify `src/index.ts`:
 
@@ -643,11 +643,11 @@ Then after `registerReadFileTool(pi, anchors);` add:
 registerEditFileTool(pi, anchors);
 ```
 
-- [ ] **Step 3: Ensure replacement mode activates `edit_file` and `read_file`**
+- [x] **Step 3: Ensure replacement mode activates `edit_file` and `read_file`**
 
 Keep `src/mode.ts` behavior from Task 1. Replacement mode removes `read` and `edit`, then adds `read_file` and `edit_file`.
 
-- [ ] **Step 4: Add edit tests**
+- [x] **Step 4: Add edit tests**
 
 Create `test/edit-file.test.ts`:
 
@@ -679,7 +679,7 @@ it("rejects stale anchor content", () => {
 });
 ```
 
-- [ ] **Step 5: Test and commit**
+- [x] **Step 5: Test and commit**
 
 ```bash
 npm test && npm run typecheck
