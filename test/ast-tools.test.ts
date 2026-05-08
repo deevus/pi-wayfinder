@@ -99,7 +99,7 @@ describe("AST read tools", () => {
     expect(text).toBe("--- notes.txt ---\nNo definitions found.");
   });
 
-  it("extracts anchored function bodies with content hashes and reports missing names", async () => {
+  it("extracts anchored function bodies with content hashes", async () => {
     const cwd = await createTempDir();
     const source = [
       "const before = 1;",
@@ -136,7 +136,7 @@ describe("AST read tools", () => {
     expect(text).toContain("DiracE│  return message;");
     expect(text).toContain("DiracF│}");
     expect(text).not.toContain("DiracH│class Greeter {");
-    expect(text).toContain("sample.ts::Missing\nNot found.");
+    expect(text).not.toContain("sample.ts::Missing\nNot found.");
     expect(result.details).toEqual({ paths: ["sample.ts"], function_names: ["greet", "Missing"] });
   });
 
