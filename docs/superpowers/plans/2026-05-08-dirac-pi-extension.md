@@ -701,7 +701,7 @@ git commit -m "feat: add anchored edit_file tool"
 - Modify: `src/index.ts`
 - Modify: `README.md`
 
-- [ ] **Step 1: Add prompt guidance**
+- [x] **Step 1: Add prompt guidance**
 
 Create `src/prompt.ts`:
 
@@ -734,7 +734,7 @@ Anchor rules:
 }
 ```
 
-- [ ] **Step 2: Inject guidance before agent start**
+- [x] **Step 2: Inject guidance before agent start**
 
 Modify `src/index.ts`:
 
@@ -751,11 +751,11 @@ pi.on("before_agent_start", async (event) => {
 });
 ```
 
-- [ ] **Step 3: Add hard override registration behind explicit flag**
+- [x] **Step 3: Add hard override registration behind explicit flag**
 
 Do not implement hard override in the first release. Add documentation that hard override is reserved for a follow-up because replacement mode already removes `read` and `edit` from active tools without changing built-in semantics.
 
-- [ ] **Step 4: Update README mode docs**
+- [x] **Step 4: Update README mode docs**
 
 Add this paragraph to `README.md`:
 
@@ -767,7 +767,7 @@ Add this paragraph to `README.md`:
 A future explicit `--dirac-override-builtins read_edit` mode can register tools named `read` and `edit`, but that is intentionally separate because overriding built-ins can surprise existing workflows.
 ```
 
-- [ ] **Step 5: Typecheck and commit**
+- [x] **Step 5: Typecheck and commit**
 
 ```bash
 npm run typecheck
