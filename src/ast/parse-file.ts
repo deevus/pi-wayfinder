@@ -134,10 +134,13 @@ function isDirectIdentifierCallNode(node: Parser.SyntaxNode): boolean {
   const parent = node.parent;
   if (!parent) return false;
 
+  if (parent.type === "method_invocation") {
+    return parent.childForFieldName("object") === null && parent.childForFieldName("name")?.id === node.id;
+  }
+
   const callTypes = [
     "call",
     "call_expression",
-    "method_invocation",
     "function_call_expression",
     "invocation_expression",
   ];

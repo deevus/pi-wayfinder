@@ -114,4 +114,28 @@ describe("parseFile", () => {
 
     expect(caller?.calls).toBeUndefined();
   });
+
+  it("does not count Java member method invocations as bare local calls", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "Sample.java");
+    await writeFile(filePath, [
+      "class Sample {",
+      "  void save() {}",
+      "  void memberOnly(Api api) {",
+      "    api.save();",
+      "  }",
+      "  void bareCaller() {",
+      "    save();",
+      "  }",
+      "}"
+    ].join("\n"), "utf8");
+
+    const parsers = await loadRequiredLanguageParsers([filePath]);
+    const defs = await parseFile(filePath, parsers, { showCallGraph: true });
+    const memberOnly = defs?.find((def) => def.text === "  void memberOnly(Api api) {");
+    const bareCaller = defs?.find((def) => def.text === "  void bareCaller() {");
+
+    expect(memberOnly?.calls).toBeUndefined();
+    expect(bareCaller?.calls).toEqual(["save"]);
+  });
 });
