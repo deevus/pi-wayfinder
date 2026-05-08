@@ -104,7 +104,7 @@ git commit -m "feat: add tree-sitter query assets"
 - Create: `src/ast/language-parser.ts`
 - Create: `test/ast-language-parser.test.ts`
 
-- [ ] **Step 1: Write failing parser-loader tests**
+- [x] **Step 1: Write failing parser-loader tests**
 
 Create `test/ast-language-parser.test.ts`:
 
@@ -149,7 +149,7 @@ describe("tree-sitter language parser loader", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -159,7 +159,7 @@ npx vitest run test/ast-language-parser.test.ts
 
 Expected: FAIL because `src/ast/language-parser.ts` does not exist.
 
-- [ ] **Step 3: Implement parser loader**
+- [x] **Step 3: Implement parser loader**
 
 Create `src/ast/language-parser.ts` by adapting Dirac's `languageParser.ts` with these changes:
 
@@ -296,7 +296,7 @@ export async function loadRequiredLanguageParsers(filesToParse: string[]): Promi
 }
 ```
 
-- [ ] **Step 4: Verify parser tests pass**
+- [x] **Step 4: Verify parser tests pass**
 
 ```bash
 npx vitest run test/ast-language-parser.test.ts
@@ -305,7 +305,7 @@ npm run typecheck
 
 Expected: parser tests pass and TypeScript compiles.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ast/language-parser.ts test/ast-language-parser.test.ts
