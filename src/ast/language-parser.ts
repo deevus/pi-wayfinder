@@ -24,13 +24,19 @@ export interface LanguageParser {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const realDirname = fs.realpathSync(__dirname);
+
+function uniqueExistingOrder(paths: string[]): string[] {
+  return Array.from(new Set(paths));
+}
 
 async function loadLanguage(langName: string): Promise<Parser.Language> {
   const wasmName = `tree-sitter-${langName}.wasm`;
-  const searchPaths = [
+  const searchPaths = uniqueExistingOrder([
     path.join(process.cwd(), "node_modules", "tree-sitter-wasms", "out", wasmName),
     path.join(__dirname, "..", "..", "node_modules", "tree-sitter-wasms", "out", wasmName),
-  ];
+    path.join(realDirname, "..", "..", "node_modules", "tree-sitter-wasms", "out", wasmName),
+  ]);
 
   for (const wasmPath of searchPaths) {
     try {
@@ -54,6 +60,8 @@ async function initializeParser(): Promise<void> {
       locateFile(scriptName: string) {
         const localPath = path.join(__dirname, scriptName);
         if (fs.existsSync(localPath)) return localPath;
+        const realLocalPath = path.join(realDirname, scriptName);
+        if (fs.existsSync(realLocalPath)) return realLocalPath;
         return path.join(process.cwd(), "node_modules", "web-tree-sitter", scriptName);
       },
     }).then(() => {
