@@ -58,7 +58,7 @@ Do not import directly from `/Users/sh/Projects/dirac`; copy/adapt code into `pi
 - Create: `src/ast/queries/swift.ts`
 - Create: `src/ast/queries/kotlin.ts`
 
-- [ ] **Step 1: Install dependencies**
+- [x] **Step 1: Install dependencies**
 
 Run:
 
@@ -68,7 +68,7 @@ npm install web-tree-sitter@^0.22.6 tree-sitter-wasms@^0.1.13
 
 Expected: `package.json` has both packages in `dependencies`; `package-lock.json` is updated.
 
-- [ ] **Step 2: Copy query files**
+- [x] **Step 2: Copy query files**
 
 Copy every file from Dirac:
 
@@ -79,7 +79,7 @@ cp /Users/sh/Projects/dirac/src/services/tree-sitter/queries/*.ts src/ast/querie
 
 Expected files include `typescript.ts`, `javascript.ts`, `python.ts`, and `index.ts`.
 
-- [ ] **Step 3: Verify copied query exports compile as standalone TypeScript**
+- [x] **Step 3: Verify copied query exports compile as standalone TypeScript**
 
 Run:
 
@@ -89,7 +89,7 @@ npm run typecheck
 
 Expected at this point: either passes, or only errors from missing future files are absent because query files are self-contained default string exports.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add package.json package-lock.json src/ast/queries
