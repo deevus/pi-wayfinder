@@ -122,3 +122,287 @@ describe("replace_symbol pure helpers", () => {
     expect(batches.map((batch) => batch.replacements.map((replacement) => replacement.symbol))).toEqual([["a", "b"], ["c"]]);
   });
 });
+
+describe("replace_symbol tool", () => {
+  it("replaces a TypeScript top-level function and reports stale anchors", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, [
+      "export function greet(name: string) {",
+      "  return `hello ${name}`;",
+      "}",
+      "",
+      "export const untouched = 1;",
+    ].join("\n"), "utf8");
+
+    const tool = registerToolForTest();
+    const result = await tool.execute(
+      "call-1",
+      {
+        replacements: [
+          {
+            path: "sample.ts",
+            symbol: "greet",
+            type: "function",
+            text: "export function greet(name: string) {\n  return name.toUpperCase();\n}",
+          },
+        ],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    );
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe([
+      "export function greet(name: string) {",
+      "  return name.toUpperCase();",
+      "}",
+      "",
+      "export const untouched = 1;",
+    ].join("\n"));
+    expect(result.content[0]?.type === "text" ? result.content[0].text : "").toContain(
+      "Successfully replaced symbols 'greet' in sample.ts. Any existing hash anchors for these symbols are now stale.",
+    );
+    expect(result.details).toEqual({ paths: ["sample.ts"], symbols: ["greet"] });
+  });
+
+  it("replaces a class method by suffix and keeps unrelated top-level code", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, [
+      "class Service {",
+      "  run() {",
+      "    return 1;",
+      "  }",
+      "}",
+      "",
+      "const topLevel = 1;",
+    ].join("\n"), "utf8");
+
+    const tool = registerToolForTest();
+    await tool.execute(
+      "call-2",
+      {
+        replacements: [
+          {
+            path: "sample.ts",
+            symbol: "run",
+            type: "method",
+            text: "  run() {\n    return 2;\n  }",
+          },
+        ],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    );
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe([
+      "class Service {",
+      "  run() {",
+      "    return 2;",
+      "  }",
+      "}",
+      "",
+      "const topLevel = 1;",
+    ].join("\n"));
+  });
+
+  it("replaces a JavaScript class method", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.js");
+    await writeFile(filePath, [
+      "class Service {",
+      "  run() {",
+      "    return 1;",
+      "  }",
+      "}",
+    ].join("\n"), "utf8");
+
+    const tool = registerToolForTest();
+    await tool.execute(
+      "call-3",
+      {
+        replacements: [
+          { path: "sample.js", symbol: "Service.run", text: "  run() {\n    return 3;\n  }" },
+        ],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    );
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe([
+      "class Service {",
+      "  run() {",
+      "    return 3;",
+      "  }",
+      "}",
+    ].join("\n"));
+  });
+
+  it("replaces a Python function", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.py");
+    await writeFile(filePath, [
+      "def greet(name):",
+      "    return f'hello {name}'",
+      "",
+      "value = 1",
+    ].join("\n"), "utf8");
+
+    const tool = registerToolForTest();
+    await tool.execute(
+      "call-4",
+      {
+        replacements: [
+          { path: "sample.py", symbol: "greet", type: "function", text: "def greet(name):\n    return name.upper()" },
+        ],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    );
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe([
+      "def greet(name):",
+      "    return name.upper()",
+      "",
+      "value = 1",
+    ].join("\n"));
+  });
+
+  it("returns an error and writes nothing when a symbol is missing", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    const original = "export const value = 1;\n";
+    await writeFile(filePath, original, "utf8");
+
+    const tool = registerToolForTest();
+    await expect(tool.execute(
+      "call-5",
+      {
+        replacements: [
+          { path: "sample.ts", symbol: "missing", type: "function", text: "export function missing() {}" },
+        ],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    )).rejects.toThrow("Symbol 'missing' of type 'function' not found in sample.ts.");
+    await expect(readFile(filePath, "utf8")).resolves.toBe(original);
+  });
+
+  it("rejects overlapping replacements and writes nothing", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    const original = [
+      "class Service {",
+      "  run() {",
+      "    return 1;",
+      "  }",
+      "}",
+    ].join("\n");
+    await writeFile(filePath, original, "utf8");
+
+    const tool = registerToolForTest();
+    await expect(tool.execute(
+      "call-6",
+      {
+        replacements: [
+          { path: "sample.ts", symbol: "Service", type: "class", text: "class Service {}" },
+          { path: "sample.ts", symbol: "Service.run", type: "method", text: "  run() {\n    return 2;\n  }" },
+        ],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    )).rejects.toThrow(/Overlapping replacements detected/);
+    await expect(readFile(filePath, "utf8")).resolves.toBe(original);
+  });
+
+  it("preserves CRLF line endings and strips hash anchors from replacement text", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    const original = "export function greet() {\r\n  return 1;\r\n}\r\n";
+    await writeFile(filePath, original, "utf8");
+    const replacementLines = ["export function greet() {", "  return 2;", "}"];
+    const lineAnchors = new AnchorStateManager().reconcile(filePath, replacementLines);
+    const anchoredReplacement = replacementLines.map((line, index) => formatLineWithHash(line, lineAnchors[index])).join("\n");
+
+    const tool = registerToolForTest();
+    await tool.execute(
+      "call-7",
+      {
+        replacements: [{ path: "sample.ts", symbol: "greet", text: anchoredReplacement }],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    );
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe("export function greet() {\r\n  return 2;\r\n}\r\n");
+  });
+
+  it("includes adjacent comments in the replaced range but leaves detached comments", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, [
+      "// detached",
+      "",
+      "/** docs */",
+      "export function helper() {",
+      "  return 1;",
+      "}",
+    ].join("\n"), "utf8");
+
+    const tool = registerToolForTest();
+    await tool.execute(
+      "call-8",
+      {
+        replacements: [
+          { path: "sample.ts", symbol: "helper", text: "/** new docs */\nexport function helper() {\n  return 2;\n}" },
+        ],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    );
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe([
+      "// detached",
+      "",
+      "/** new docs */",
+      "export function helper() {",
+      "  return 2;",
+      "}",
+    ].join("\n"));
+  });
+
+  it("passes abort signals through UI confirmation and writes nothing when aborted", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    const original = "export function greet() {\n  return 1;\n}\n";
+    await writeFile(filePath, original, "utf8");
+    const controller = new AbortController();
+    const abortReason = new Error("replace aborted");
+    const confirm = vi.fn(async (_title: string, _message: string, opts?: { signal?: AbortSignal }) => {
+      expect(opts?.signal).toBe(controller.signal);
+      controller.abort(abortReason);
+      return true;
+    });
+
+    const tool = registerToolForTest();
+    await expect(tool.execute(
+      "call-9",
+      {
+        replacements: [{ path: "sample.ts", symbol: "greet", text: "export function greet() {\n  return 2;\n}" }],
+      },
+      controller.signal,
+      undefined,
+      { cwd, hasUI: true, ui: { confirm } } as never,
+    )).rejects.toThrow("replace aborted");
+    expect(confirm).toHaveBeenCalledTimes(1);
+    await expect(readFile(filePath, "utf8")).resolves.toBe(original);
+  });
+});

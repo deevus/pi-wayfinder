@@ -1,8 +1,10 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { resolve } from "node:path";
+import { withFileMutationQueue } from "@mariozechner/pi-coding-agent";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { stripHashes } from "../anchors/line-hashing.js";
-import type { SymbolRange } from "../ast/ast-anchor-bridge.js";
+import { ASTAnchorBridge, type SymbolRange } from "../ast/ast-anchor-bridge.js";
 import { ReplaceSymbolSchema } from "./schemas.js";
 
 export interface SymbolReplacement {
@@ -29,6 +31,14 @@ export function detectLineEnding(content: string): "\r\n" | "\n" {
 
 export function normalizeReplacementText(text: string, lineEnding: "\r\n" | "\n"): string {
   return stripHashes(text).replace(/\r\n|\r|\n/g, lineEnding);
+}
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) throw signal.reason ?? new Error("replace_symbol aborted");
+}
+
+function missingSymbolMessage(replacement: SymbolReplacement): string {
+  return `Symbol '${replacement.symbol}'${replacement.type ? ` of type '${replacement.type}'` : ""} not found in ${replacement.path}.`;
 }
 
 export function groupReplacementsByPath(replacements: SymbolReplacement[], cwd: string): FileReplacementBatch[] {
@@ -78,7 +88,6 @@ export function applyResolvedSymbolReplacements(
 }
 
 export function registerReplaceSymbolTool(pi: ExtensionAPI, anchors: AnchorStateManager): void {
-  void anchors;
   pi.registerTool({
     name: "replace_symbol",
     label: "Replace Symbol",
@@ -89,8 +98,61 @@ export function registerReplaceSymbolTool(pi: ExtensionAPI, anchors: AnchorState
       "Provide complete raw replacement code without hash anchors; anchors are stripped if accidentally included.",
     ],
     parameters: ReplaceSymbolSchema,
-    async execute() {
-      throw new Error("replace_symbol execution is not implemented yet");
+    async execute(_id, params, signal, _onUpdate, ctx) {
+      const replacements = params.replacements as SymbolReplacement[] | undefined;
+      if (!Array.isArray(replacements) || replacements.length === 0) {
+        throw new Error("Missing required parameter: replacements");
+      }
+
+      const batches = groupReplacementsByPath(replacements, ctx.cwd);
+      const summaries: string[] = [];
+
+      for (const batch of batches) {
+        throwIfAborted(signal);
+        await withFileMutationQueue(batch.absolutePath, async () => {
+          throwIfAborted(signal);
+          const originalContent = await readFile(batch.absolutePath, { encoding: "utf8", signal });
+          const lineEnding = detectLineEnding(originalContent);
+          const originalLines = originalContent.split(/\r?\n/);
+          anchors.reconcile(batch.absolutePath, originalLines);
+
+          const resolved: ResolvedSymbolReplacement[] = [];
+          for (const replacement of batch.replacements) {
+            throwIfAborted(signal);
+            const range = await ASTAnchorBridge.getSymbolRange(batch.absolutePath, replacement.symbol, anchors, replacement.type);
+            if (!range) throw new Error(missingSymbolMessage(replacement));
+            resolved.push({ replacement, range });
+          }
+
+          throwIfAborted(signal);
+          const finalContent = applyResolvedSymbolReplacements(originalContent, resolved, lineEnding);
+
+          if (ctx.hasUI) {
+            throwIfAborted(signal);
+            const symbolList = batch.replacements.map((replacement) => replacement.symbol).join(", ");
+            const ok = await ctx.ui.confirm("Apply Dirac symbol replacement?", `File: ${batch.displayPath}\nSymbols: ${symbolList}`, { signal });
+            throwIfAborted(signal);
+            if (!ok) throw new Error(`User rejected symbol replacements for ${batch.displayPath}`);
+          }
+
+          throwIfAborted(signal);
+          await mkdir(dirname(batch.absolutePath), { recursive: true });
+          throwIfAborted(signal);
+          await writeFile(batch.absolutePath, finalContent, { encoding: "utf8", signal });
+          anchors.reconcile(batch.absolutePath, finalContent.split(/\r?\n/));
+
+          const symbolList = batch.replacements.map((replacement) => `'${replacement.symbol}'`).join(", ");
+          summaries.push(`Successfully replaced symbols ${symbolList} in ${batch.displayPath}. Any existing hash anchors for these symbols are now stale.`);
+        });
+      }
+
+      return {
+        content: [{ type: "text", text: summaries.join("\n\n") }],
+        details: {
+          paths: batches.map((batch) => batch.displayPath),
+          symbols: replacements.map((replacement) => replacement.symbol),
+        },
+      };
     },
   });
 }
