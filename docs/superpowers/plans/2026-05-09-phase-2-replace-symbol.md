@@ -53,7 +53,7 @@
 - Create: `src/tools/replace-symbol.ts`
 - Create: `test/replace-symbol.test.ts`
 
-- [ ] **Step 1: Write failing tests for pure helpers**
+- [x] **Step 1: Write failing tests for pure helpers**
 
 Create `test/replace-symbol.test.ts` with these imports and the first `describe` block:
 
@@ -184,7 +184,7 @@ describe("replace_symbol pure helpers", () => {
 });
 ```
 
-- [ ] **Step 2: Run the new test and verify it fails because the module does not exist**
+- [x] **Step 2: Run the new test and verify it fails because the module does not exist**
 
 Run:
 
@@ -194,7 +194,7 @@ npx vitest run test/replace-symbol.test.ts
 
 Expected: FAIL with an import error for `../src/tools/replace-symbol.js` or missing exported helper names.
 
-- [ ] **Step 3: Implement pure helpers in `src/tools/replace-symbol.ts`**
+- [x] **Step 3: Implement pure helpers in `src/tools/replace-symbol.ts`**
 
 Create `src/tools/replace-symbol.ts` with the following initial implementation. The `registerReplaceSymbolTool` body is a minimal registration stub in this task; Task 2 replaces it with full AST-backed behavior.
 
@@ -297,7 +297,7 @@ export function registerReplaceSymbolTool(pi: ExtensionAPI, anchors: AnchorState
 }
 ```
 
-- [ ] **Step 4: Add the schema export used by the helper module**
+- [x] **Step 4: Add the schema export used by the helper module**
 
 Modify `src/tools/schemas.ts` by appending this schema after `GetFunctionSchema`:
 
@@ -312,7 +312,7 @@ export const ReplaceSymbolSchema = Type.Object({
 });
 ```
 
-- [ ] **Step 5: Run helper tests and typecheck**
+- [x] **Step 5: Run helper tests and typecheck**
 
 Run:
 
@@ -323,7 +323,7 @@ npm run typecheck
 
 Expected: `test/replace-symbol.test.ts` passes the pure helper tests. `npm run typecheck` passes.
 
-- [ ] **Step 6: Commit Task 1**
+- [x] **Step 6: Commit Task 1**
 
 Run:
 
@@ -340,7 +340,7 @@ git commit -m "feat: add replace symbol engine helpers"
 - Modify: `src/tools/replace-symbol.ts`
 - Modify: `test/replace-symbol.test.ts`
 
-- [ ] **Step 1: Add failing tool execution tests**
+- [x] **Step 1: Add failing tool execution tests**
 
 Append this `describe` block to `test/replace-symbol.test.ts`:
 
@@ -626,7 +626,7 @@ describe("replace_symbol tool", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tool tests and verify they fail at the execution stub**
+- [x] **Step 2: Run the tool tests and verify they fail at the execution stub**
 
 Run:
 
@@ -636,7 +636,7 @@ npx vitest run test/replace-symbol.test.ts
 
 Expected: pure helper tests pass and new tool tests fail with `replace_symbol execution is not implemented yet`.
 
-- [ ] **Step 3: Implement full registered tool execution**
+- [x] **Step 3: Implement full registered tool execution**
 
 Replace the stub implementation in `src/tools/replace-symbol.ts` with this execution structure. Keep the pure helper exports from Task 1.
 
@@ -712,7 +712,7 @@ async execute(_id, params, signal, _onUpdate, ctx) {
 }
 ```
 
-- [ ] **Step 4: Run replace-symbol tests and typecheck**
+- [x] **Step 4: Run replace-symbol tests and typecheck**
 
 Run:
 
@@ -723,7 +723,7 @@ npm run typecheck
 
 Expected: all tests in `test/replace-symbol.test.ts` pass and typecheck passes.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 Run:
 
@@ -742,7 +742,7 @@ git commit -m "feat: implement replace symbol tool"
 - Modify: `src/prompt.ts`
 - Modify: `src/index.test.ts`
 
-- [ ] **Step 1: Add failing integration expectations**
+- [x] **Step 1: Add failing integration expectations**
 
 Modify `src/index.test.ts` expected active tool arrays so every mode includes `replace_symbol`.
 
@@ -819,7 +819,7 @@ it("registers replace_symbol with the extension tools", () => {
 });
 ```
 
-- [ ] **Step 2: Run focused tests and verify failure**
+- [x] **Step 2: Run focused tests and verify failure**
 
 Run:
 
@@ -829,7 +829,7 @@ npx vitest run src/index.test.ts
 
 Expected: FAIL because `replace_symbol` is not registered, active, or mentioned in prompt guidance.
 
-- [ ] **Step 3: Register the tool in `src/index.ts`**
+- [x] **Step 3: Register the tool in `src/index.ts`**
 
 Add this import:
 
@@ -843,7 +843,7 @@ Call it after `registerGetFunctionTool(...)`:
 registerReplaceSymbolTool(pi, anchors);
 ```
 
-- [ ] **Step 4: Activate the tool in all modes in `src/mode.ts`**
+- [x] **Step 4: Activate the tool in all modes in `src/mode.ts`**
 
 Change the `diracTools` list to:
 
@@ -853,7 +853,7 @@ const diracTools = ["read_file", "edit_file", "get_file_skeleton", "get_function
 
 Do not change the replacement-mode built-in filtering logic.
 
-- [ ] **Step 5: Update prompt guidance in `src/prompt.ts`**
+- [x] **Step 5: Update prompt guidance in `src/prompt.ts`**
 
 Change the workflow list to include `replace_symbol` before `edit_file` for whole-symbol edits:
 
@@ -875,7 +875,7 @@ replace_symbol rules:
 - Existing anchors for replaced symbols become stale after replace_symbol succeeds.
 ```
 
-- [ ] **Step 6: Run focused tests and typecheck**
+- [x] **Step 6: Run focused tests and typecheck**
 
 Run:
 
@@ -886,7 +886,7 @@ npm run typecheck
 
 Expected: tests pass and typecheck passes.
 
-- [ ] **Step 7: Commit Task 3**
+- [x] **Step 7: Commit Task 3**
 
 Run:
 
@@ -903,7 +903,7 @@ git commit -m "feat: register replace symbol tool"
 - Modify: `README.md`
 - Modify: `docs/superpowers/plans/2026-05-09-phase-2-replace-symbol.md`
 
-- [ ] **Step 1: Update README with `replace_symbol` docs**
+- [x] **Step 1: Update README with `replace_symbol` docs**
 
 Append this section after the existing AST tools documentation:
 
@@ -932,7 +932,7 @@ The `replacements` array is required. Unsupported languages, parser failures, an
 
 If the README already has a more appropriate nearby section, place this text there instead of duplicating headings.
 
-- [ ] **Step 2: Run complete verification**
+- [x] **Step 2: Run complete verification**
 
 Run:
 
@@ -942,7 +942,9 @@ npm test && npm run typecheck
 
 Expected: all tests pass and typecheck passes.
 
-- [ ] **Step 3: Smoke-test against a copied Dirac source file**
+Verification evidence: `npm test && npm run typecheck` passed with 10 test files / 62 tests.
+
+- [x] **Step 3: Smoke-test against a copied Dirac source file**
 
 Run this temporary Vitest smoke from the worktree root. It copies Dirac's AST bridge, uses the registered tool directly, verifies only the copy changed, then removes the temporary smoke file:
 
@@ -996,11 +998,13 @@ rm test/.replace-symbol-dirac-smoke.test.ts
 
 Expected: the temporary smoke test passes and `test/.replace-symbol-dirac-smoke.test.ts` is removed.
 
-- [ ] **Step 4: Mark Task 4 checkboxes complete after verification**
+Smoke evidence: `npx vitest run test/.replace-symbol-dirac-smoke.test.ts` passed and the temporary smoke file was removed.
+
+- [x] **Step 4: Mark Task 4 checkboxes complete after verification**
 
 After the README update, full verification, and smoke test pass, edit this plan file and change Task 4 checkboxes from `- [ ]` to `- [x]`.
 
-- [ ] **Step 5: Commit Task 4**
+- [x] **Step 5: Commit Task 4**
 
 Run:
 
