@@ -43,3 +43,24 @@ Verification note: On 2026-05-08 during Task 7, package checks plus additive and
 `get_file_skeleton` and `get_function` use Dirac-style tree-sitter parsing for supported source files. Supported extensions include `ts`, `tsx`, `js`, `jsx`, `py`, `rs`, `go`, `c`, `h`, `cpp`, `hpp`, `cs`, `rb`, `java`, `php`, `swift`, and `kt`.
 
 For unsupported languages or parser load failures, the tools fall back to the conservative regex MVP for common JavaScript, TypeScript, and Python top-level definitions.
+
+## Symbol replacement
+
+`replace_symbol` replaces complete AST symbols by name. Use it when replacing an entire function, method, class, interface, or exported const/arrow function.
+
+```json
+{
+  "replacements": [
+    {
+      "path": "src/sample.ts",
+      "symbol": "Service.run",
+      "type": "method",
+      "text": "  run() {\n    return 2;\n  }"
+    }
+  ]
+}
+```
+
+The tool resolves symbols with tree-sitter, rejects overlapping replacements in the same file, applies accepted replacements from bottom to top, strips hash anchors from replacement text, and preserves the file's existing line-ending style where practical.
+
+The `replacements` array is required. Unsupported languages, parser failures, and missing symbols are reported as errors; `replace_symbol` does not fall back to regex matching.

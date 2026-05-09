@@ -80,7 +80,8 @@ describe("diracToolsExtension", () => {
       "read_file",
       "edit_file",
       "get_file_skeleton",
-      "get_function"
+      "get_function",
+      "replace_symbol"
     ]);
 
     const command = mock.commands.get("dirac-tools");
@@ -93,6 +94,7 @@ describe("diracToolsExtension", () => {
       "edit_file",
       "get_file_skeleton",
       "get_function",
+      "replace_symbol",
       "write",
       "bash",
       "grep",
@@ -108,7 +110,8 @@ describe("diracToolsExtension", () => {
       "read_file",
       "edit_file",
       "get_file_skeleton",
-      "get_function"
+      "get_function",
+      "replace_symbol"
     ]);
   });
 
@@ -127,5 +130,21 @@ describe("diracToolsExtension", () => {
 
     expect(result?.systemPrompt).toContain("Replacement mode is active.");
     expect(result?.systemPrompt).not.toContain("Preferred mode is active.");
+    expect(result?.systemPrompt).toContain("Use replace_symbol for whole-symbol replacements");
+  });
+
+  it("registers replace_symbol with the extension tools", () => {
+    const mock = createMockPi(["read", "edit"]);
+
+    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
+
+    const registeredNames = mock.pi.registerTool.mock.calls.map(([tool]) => tool.name);
+    expect(registeredNames).toEqual([
+      "read_file",
+      "edit_file",
+      "get_file_skeleton",
+      "get_function",
+      "replace_symbol"
+    ]);
   });
 });

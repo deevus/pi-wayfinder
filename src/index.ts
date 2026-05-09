@@ -6,6 +6,7 @@ import { registerEditFileTool } from "./tools/edit-file.js";
 import { registerGetFileSkeletonTool } from "./tools/get-file-skeleton.js";
 import { registerGetFunctionTool } from "./tools/get-function.js";
 import { registerReadFileTool } from "./tools/read-file.js";
+import { registerReplaceSymbolTool } from "./tools/replace-symbol.js";
 
 export default function diracToolsExtension(pi: ExtensionAPI): void {
   const anchors = new AnchorStateManager();
@@ -13,6 +14,7 @@ export default function diracToolsExtension(pi: ExtensionAPI): void {
   registerEditFileTool(pi, anchors);
   registerGetFileSkeletonTool(pi, anchors);
   registerGetFunctionTool(pi, anchors);
+  registerReplaceSymbolTool(pi, anchors);
 
   let baselineActiveTools: string[] | undefined;
 

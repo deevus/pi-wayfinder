@@ -30,3 +30,12 @@ export const GetFunctionSchema = Type.Object({
   paths: Type.Array(Type.String()),
   function_names: Type.Array(Type.String())
 });
+
+export const ReplaceSymbolSchema = Type.Object({
+  replacements: Type.Array(Type.Object({
+    path: Type.String({ description: "Relative or absolute source file path" }),
+    symbol: Type.String({ description: "Dot-separated symbol path or suffix to replace" }),
+    text: Type.String({ description: "Complete replacement source for the symbol" }),
+    type: Type.Optional(Type.String({ description: "Optional symbol type such as function, method, class, or interface" }))
+  }))
+});
