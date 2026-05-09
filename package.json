@@ -3,7 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "keywords": ["pi-package", "dirac", "hash-anchored", "ast"],
+  "keywords": [
+    "pi-package",
+    "dirac",
+    "hash-anchored",
+    "ast"
+  ],
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
@@ -25,6 +30,9 @@
     "typebox": "*"
   },
   "pi": {
-    "extensions": ["./src/index.ts"]
-  }
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "license": "Apache-2.0"
 }
