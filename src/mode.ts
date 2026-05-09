@@ -15,7 +15,7 @@ export function parseOverrideMode(value: unknown): DiracOverrideMode {
 }
 
 export function activeToolsForMode(mode: DiracToolMode, currentTools: string[]): string[] {
-  const diracTools = ["read_file", "edit_file", "get_file_skeleton", "get_function", "replace_symbol"];
+  const diracTools = ["read_file", "edit_file", "get_file_skeleton", "get_function", "replace_symbol", "find_symbol_references", "rename_symbol"];
   if (mode !== "replacement") return Array.from(new Set([...currentTools, ...diracTools]));
   const keep = currentTools.filter((name) => name !== "read" && name !== "edit");
   return Array.from(new Set([...keep, ...diracTools, "write", "bash", "grep", "find", "ls"]));

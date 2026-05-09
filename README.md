@@ -64,3 +64,31 @@ For unsupported languages or parser load failures, the tools fall back to the co
 The tool resolves symbols with tree-sitter, rejects overlapping replacements in the same file, applies accepted replacements from bottom to top, strips hash anchors from replacement text, and preserves the file's existing line-ending style where practical.
 
 The `replacements` array is required. Unsupported languages, parser failures, and missing symbols are reported as errors; `replace_symbol` does not fall back to regex matching.
+
+## Finding symbol references
+
+`find_symbol_references` finds exact tree-sitter definitions and references for one or more symbols across files or directories.
+
+```json
+{
+  "paths": ["src/", "test/"],
+  "symbols": ["calculateTotal", "UserAccount"],
+  "find_type": "both"
+}
+```
+
+`find_type` can be `definition`, `reference`, or `both` (default). Results are grouped by file and include stable hash anchors for each matching line.
+
+## Renaming symbols
+
+`rename_symbol` renames all exact tree-sitter definitions and references of one symbol inside the requested files or directories.
+
+```json
+{
+  "paths": ["src/", "test/"],
+  "existing_symbol": "calculateTotal",
+  "new_symbol": "calculateGrandTotal"
+}
+```
+
+The tool uses an in-memory session cache for scanned files, invalidated by file `mtime` and size. It does not create a persistent symbol index. Before writing, it prepares all affected files and verifies every indexed location still matches the existing symbol; if validation fails, no file is written.

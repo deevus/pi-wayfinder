@@ -20,6 +20,10 @@ replace_symbol rules:
 - replace_symbol uses a batch-only replacements array.
 - Each replacement text must be complete raw code for that symbol, including export keywords, decorators, and adjacent documentation comments that should remain.
 - Existing anchors for replaced symbols become stale after replace_symbol succeeds.
+
+Symbol navigation rules:
+- Use find_symbol_references to inspect exact AST definitions/references before broad rename work.
+- Use rename_symbol for exact symbol renames across files/directories; it renames definitions and references together.
 `;
 
   if (mode === "replacement") {

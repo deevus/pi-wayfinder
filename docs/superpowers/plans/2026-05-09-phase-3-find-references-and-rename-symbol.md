@@ -8,6 +8,8 @@
 
 **Tech Stack:** TypeScript, pi extension API, `typebox`, existing `web-tree-sitter` parser loader and query files, Node `fs/promises`, existing `AnchorStateManager`, existing pi `withFileMutationQueue`, Vitest.
 
+Verification evidence: `npm test && npm run typecheck` passed with 13 test files / 85 tests.
+
 ---
 
 ## Source References
