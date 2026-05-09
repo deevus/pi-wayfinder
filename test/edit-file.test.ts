@@ -166,47 +166,41 @@ describe("edit_file tool", () => {
     await expect(readFile(path, "utf8")).resolves.toBe("alpha\r\nBETA\r\ngamma\r\n");
   });
 
-  it("passes the abort signal to confirmation and does not write when aborted", async () => {
+  it("does not request extra UI confirmation before applying edits", async () => {
     const cwd = await createTempDir();
-    const path = join(cwd, "abort.txt");
+    const path = join(cwd, "ui.txt");
     const original = "alpha\nbeta\n";
     await writeFile(path, original, "utf8");
 
     const anchors = anchorsFor(original.split(/\r?\n/));
     const tool = registerToolForTest();
-    const controller = new AbortController();
-    const abortReason = new Error("edit aborted");
-    const confirm = vi.fn(async (_title: string, _message: string, opts?: { signal?: AbortSignal }) => {
-      expect(opts?.signal).toBe(controller.signal);
-      controller.abort(abortReason);
-      return true;
+    const confirm = vi.fn(() => {
+      throw new Error("unexpected edit_file confirmation");
     });
 
-    await expect(
-      tool.execute(
-        "call-2",
-        {
-          files: [
-            {
-              path: "abort.txt",
-              edits: [
-                {
-                  edit_type: "replace",
-                  anchor: formatLineWithHash("beta", anchors[1]),
-                  end_anchor: formatLineWithHash("beta", anchors[1]),
-                  text: "BETA"
-                }
-              ]
-            }
-          ]
-        },
-        controller.signal,
-        undefined,
-        { cwd, hasUI: true, ui: { confirm } } as never
-      )
-    ).rejects.toThrow("edit aborted");
+    await tool.execute(
+      "call-2",
+      {
+        files: [
+          {
+            path: "ui.txt",
+            edits: [
+              {
+                edit_type: "replace",
+                anchor: formatLineWithHash("beta", anchors[1]),
+                end_anchor: formatLineWithHash("beta", anchors[1]),
+                text: "BETA"
+              }
+            ]
+          }
+        ]
+      },
+      undefined,
+      undefined,
+      { cwd, hasUI: true, ui: { confirm } } as never
+    );
 
-    expect(confirm).toHaveBeenCalledTimes(1);
-    await expect(readFile(path, "utf8")).resolves.toBe(original);
+    expect(confirm).not.toHaveBeenCalled();
+    await expect(readFile(path, "utf8")).resolves.toBe("alpha\nBETA\n");
   });
 });

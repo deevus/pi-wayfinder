@@ -379,30 +379,26 @@ describe("replace_symbol tool", () => {
     ].join("\n"));
   });
 
-  it("passes abort signals through UI confirmation and writes nothing when aborted", async () => {
+  it("does not request extra UI confirmation before applying replacements", async () => {
     const cwd = await createTempDir();
     const filePath = join(cwd, "sample.ts");
-    const original = "export function greet() {\n  return 1;\n}\n";
-    await writeFile(filePath, original, "utf8");
-    const controller = new AbortController();
-    const abortReason = new Error("replace aborted");
-    const confirm = vi.fn(async (_title: string, _message: string, opts?: { signal?: AbortSignal }) => {
-      expect(opts?.signal).toBe(controller.signal);
-      controller.abort(abortReason);
-      return true;
+    await writeFile(filePath, "export function greet() {\n  return 1;\n}\n", "utf8");
+    const confirm = vi.fn(() => {
+      throw new Error("unexpected replace_symbol confirmation");
     });
 
     const tool = registerToolForTest();
-    await expect(tool.execute(
+    await tool.execute(
       "call-9",
       {
         replacements: [{ path: "sample.ts", symbol: "greet", text: "export function greet() {\n  return 2;\n}" }],
       },
-      controller.signal,
+      undefined,
       undefined,
       { cwd, hasUI: true, ui: { confirm } } as never,
-    )).rejects.toThrow("replace aborted");
-    expect(confirm).toHaveBeenCalledTimes(1);
-    await expect(readFile(filePath, "utf8")).resolves.toBe(original);
+    );
+
+    expect(confirm).not.toHaveBeenCalled();
+    await expect(readFile(filePath, "utf8")).resolves.toBe("export function greet() {\n  return 2;\n}\n");
   });
 });

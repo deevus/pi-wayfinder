@@ -40,8 +40,8 @@
 - Unsupported parser, parse failure, and missing symbol all surface as `Symbol '<name>'... not found in <path>.`.
 - Existing anchors for replaced symbols are stale after a successful edit; include that warning in success output.
 - Use `withFileMutationQueue(absolutePath, async () => { ... })` for each file batch, matching `edit_file`.
-- Use `ctx.ui.confirm(...)` when `ctx.hasUI` is true, matching `edit_file` mutation approval behavior.
-- Throw promptly on abort via a local `throwIfAborted(signal)` helper. Pass the signal to `readFile`, `writeFile`, and `ctx.ui.confirm`.
+- Do not call `ctx.ui.confirm(...)` from Dirac tools; pi owns tool approval/permission UX.
+- Throw promptly on abort via a local `throwIfAborted(signal)` helper. Pass the signal to `readFile` and `writeFile`.
 - A leading `@` in paths should be stripped before resolving against `ctx.cwd`.
 - Preserve CRLF files by detecting the target file EOL and converting replacement text newlines to that EOL before slicing it into the file.
 
@@ -601,31 +601,27 @@ describe("replace_symbol tool", () => {
     ].join("\n"));
   });
 
-  it("passes abort signals through UI confirmation and writes nothing when aborted", async () => {
+  it("does not request extra UI confirmation before applying replacements", async () => {
     const cwd = await createTempDir();
     const filePath = join(cwd, "sample.ts");
-    const original = "export function greet() {\n  return 1;\n}\n";
-    await writeFile(filePath, original, "utf8");
-    const controller = new AbortController();
-    const abortReason = new Error("replace aborted");
-    const confirm = vi.fn(async (_title: string, _message: string, opts?: { signal?: AbortSignal }) => {
-      expect(opts?.signal).toBe(controller.signal);
-      controller.abort(abortReason);
-      return true;
+    await writeFile(filePath, "export function greet() {\n  return 1;\n}\n", "utf8");
+    const confirm = vi.fn(() => {
+      throw new Error("unexpected replace_symbol confirmation");
     });
 
     const tool = registerToolForTest();
-    await expect(tool.execute(
+    await tool.execute(
       "call-9",
       {
         replacements: [{ path: "sample.ts", symbol: "greet", text: "export function greet() {\n  return 2;\n}" }],
       },
-      controller.signal,
+      undefined,
       undefined,
       { cwd, hasUI: true, ui: { confirm } } as never,
-    )).rejects.toThrow("replace aborted");
-    expect(confirm).toHaveBeenCalledTimes(1);
-    await expect(readFile(filePath, "utf8")).resolves.toBe(original);
+    );
+
+    expect(confirm).not.toHaveBeenCalled();
+    await expect(readFile(filePath, "utf8")).resolves.toBe("export function greet() {\n  return 2;\n}\n");
   });
 });
 ```
@@ -694,14 +690,6 @@ async execute(_id, params, signal, _onUpdate, ctx) {
 
       throwIfAborted(signal);
       const finalContent = applyResolvedSymbolReplacements(originalContent, resolved, lineEnding);
-
-      if (ctx.hasUI) {
-        throwIfAborted(signal);
-        const symbolList = batch.replacements.map((replacement) => replacement.symbol).join(", ");
-        const ok = await ctx.ui.confirm("Apply Dirac symbol replacement?", `File: ${batch.displayPath}\nSymbols: ${symbolList}`, { signal });
-        throwIfAborted(signal);
-        if (!ok) throw new Error(`User rejected symbol replacements for ${batch.displayPath}`);
-      }
 
       throwIfAborted(signal);
       await mkdir(dirname(batch.absolutePath), { recursive: true });

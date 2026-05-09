@@ -127,13 +127,6 @@ export function registerReplaceSymbolTool(pi: ExtensionAPI, anchors: AnchorState
           throwIfAborted(signal);
           const finalContent = applyResolvedSymbolReplacements(originalContent, resolved, lineEnding);
 
-          if (ctx.hasUI) {
-            throwIfAborted(signal);
-            const symbolList = batch.replacements.map((replacement) => replacement.symbol).join(", ");
-            const ok = await ctx.ui.confirm("Apply Dirac symbol replacement?", `File: ${batch.displayPath}\nSymbols: ${symbolList}`, { signal });
-            throwIfAborted(signal);
-            if (!ok) throw new Error(`User rejected symbol replacements for ${batch.displayPath}`);
-          }
 
           throwIfAborted(signal);
           await mkdir(dirname(batch.absolutePath), { recursive: true });

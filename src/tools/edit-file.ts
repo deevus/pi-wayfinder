@@ -105,12 +105,6 @@ export function registerEditFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
           throwIfAborted(signal);
           const nextContent = nextLines.join(lineEnding);
 
-          if (ctx.hasUI) {
-            throwIfAborted(signal);
-            const ok = await ctx.ui.confirm("Apply Dirac edit?", `File: ${file.path}\nEdits: ${file.edits.length}`, { signal });
-            throwIfAborted(signal);
-            if (!ok) throw new Error(`User rejected edits for ${file.path}`);
-          }
 
           throwIfAborted(signal);
           await mkdir(dirname(absolutePath), { recursive: true });
