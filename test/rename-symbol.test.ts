@@ -122,7 +122,39 @@ describe("rename_symbol tool", () => {
 
     await expect(tool.execute("call-5", { paths: [], existing_symbol: "a", new_symbol: "b" }, undefined, undefined, { cwd } as never)).rejects.toThrow("Missing required parameter: paths");
     await expect(tool.execute("call-6", { paths: ["."], existing_symbol: "", new_symbol: "b" }, undefined, undefined, { cwd } as never)).rejects.toThrow("Missing required parameter: existing_symbol");
-    await expect(tool.execute("call-7", { paths: ["."], existing_symbol: "a", new_symbol: "" }, undefined, undefined, { cwd } as never)).rejects.toThrow("Missing required parameter: new_symbol");
+    await expect(tool.execute("call-7", { paths: ["."], existing_symbol: "a" }, undefined, undefined, { cwd } as never)).rejects.toThrow("Missing required parameter: new_symbol");
+  });
+
+  it("allows an empty replacement symbol", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, "function greet() { return greet(); }\n", "utf8");
+
+    const tool = registerToolForTest();
+    await tool.execute("call-empty", { paths: ["sample.ts"], existing_symbol: "greet", new_symbol: "" }, undefined, undefined, { cwd } as never);
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe("function () { return (); }\n");
+  });
+
+  it("does not write earlier files when a later file has a stale location", async () => {
+    const cwd = await createTempDir();
+    const firstPath = join(cwd, "first.ts");
+    const secondPath = join(cwd, "second.ts");
+    await writeFile(firstPath, "function greet() { return greet(); }\n", "utf8");
+    await writeFile(secondPath, "function other() { return other(); }\n", "utf8");
+    const scanner = {
+      scanPaths: vi.fn(async () => [
+        { absolutePath: firstPath, displayPath: "first.ts", name: "greet", startLine: 0, startColumn: 9, endLine: 0, endColumn: 14, type: "definition" },
+        { absolutePath: secondPath, displayPath: "second.ts", name: "greet", startLine: 0, startColumn: 9, endLine: 0, endColumn: 14, type: "definition" },
+      ]),
+      invalidate: vi.fn(),
+    } as unknown as SymbolScanner;
+
+    const tool = registerToolForTest(scanner);
+    await expect(tool.execute("call-stale", { paths: ["."], existing_symbol: "greet", new_symbol: "welcome" }, undefined, undefined, { cwd } as never)).rejects.toThrow("Stale symbol location for 'greet' in second.ts at line 1.");
+
+    await expect(readFile(firstPath, "utf8")).resolves.toBe("function greet() { return greet(); }\n");
+    await expect(readFile(secondPath, "utf8")).resolves.toBe("function other() { return other(); }\n");
   });
 
   it("does not call ctx.ui.confirm", async () => {

@@ -90,11 +90,11 @@ export function registerRenameSymbolTool(pi: ExtensionAPI, anchors: AnchorStateM
     parameters: RenameSymbolSchema,
     async execute(_id, params, signal, _onUpdate, ctx) {
       const paths = params.paths as string[] | undefined;
-      const existingSymbol = params.existing_symbol as string | undefined;
-      const newSymbol = params.new_symbol as string | undefined;
+      const existingSymbol = params.existing_symbol as unknown;
+      const newSymbol = params.new_symbol as unknown;
       if (!Array.isArray(paths) || paths.length === 0) throw new Error("Missing required parameter: paths");
-      if (!existingSymbol) throw new Error("Missing required parameter: existing_symbol");
-      if (!newSymbol) throw new Error("Missing required parameter: new_symbol");
+      if (typeof existingSymbol !== "string" || existingSymbol.length === 0) throw new Error("Missing required parameter: existing_symbol");
+      if (typeof newSymbol !== "string") throw new Error("Missing required parameter: new_symbol");
 
       const locations = (await scanner.scanPaths(paths, ctx.cwd, signal)).filter((location) => location.name === existingSymbol);
       if (locations.length === 0) {
@@ -105,35 +105,37 @@ export function registerRenameSymbolTool(pi: ExtensionAPI, anchors: AnchorStateM
       }
 
       const byFile = groupLocationsByFile(locations);
-      const preparedFiles: PreparedRenameFile[] = [];
+      const preparedFiles = await withFileMutationQueues(Array.from(byFile.keys()), async () => {
+        const prepared: PreparedRenameFile[] = [];
 
-      for (const [absolutePath, fileLocations] of Array.from(byFile.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-        throwIfAborted(signal);
-        const originalContent = await readFile(absolutePath, { encoding: "utf8", signal });
-        const renameLocations = fileLocations.map((location) => ({
-          startLine: location.startLine,
-          startColumn: location.startColumn,
-          endLine: location.endLine,
-          endColumn: location.endColumn,
-          displayPath: location.displayPath
-        }));
-        const { finalContent, replacementCount } = applySymbolRenameToContent(originalContent, renameLocations, existingSymbol, newSymbol);
-        preparedFiles.push({
-          absolutePath,
-          displayPath: fileLocations[0]?.displayPath || absolutePath,
-          finalContent,
-          finalLines: finalContent.split(/\r?\n/),
-          replacementCount
-        });
-      }
+        for (const [absolutePath, fileLocations] of Array.from(byFile.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
+          throwIfAborted(signal);
+          const originalContent = await readFile(absolutePath, { encoding: "utf8", signal });
+          const renameLocations = fileLocations.map((location) => ({
+            startLine: location.startLine,
+            startColumn: location.startColumn,
+            endLine: location.endLine,
+            endColumn: location.endColumn,
+            displayPath: location.displayPath
+          }));
+          const { finalContent, replacementCount } = applySymbolRenameToContent(originalContent, renameLocations, existingSymbol, newSymbol);
+          prepared.push({
+            absolutePath,
+            displayPath: fileLocations[0]?.displayPath || absolutePath,
+            finalContent,
+            finalLines: finalContent.split(/\r?\n/),
+            replacementCount
+          });
+        }
 
-      await withFileMutationQueues(preparedFiles.map((file) => file.absolutePath), async () => {
-        for (const file of preparedFiles) {
+        for (const file of prepared) {
           throwIfAborted(signal);
           await writeFile(file.absolutePath, file.finalContent, { encoding: "utf8", signal });
           anchors.reconcile(file.absolutePath, file.finalLines);
           scanner.invalidate(file.absolutePath);
         }
+
+        return prepared;
       });
 
       const totalReplacements = preparedFiles.reduce((sum, file) => sum + file.replacementCount, 0);

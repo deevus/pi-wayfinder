@@ -14,8 +14,8 @@ import { registerReplaceSymbolTool } from "./tools/replace-symbol.js";
 
 export default function diracToolsExtension(pi: ExtensionAPI): void {
   const anchors = new AnchorStateManager();
-
-  const symbolScanner = new SymbolScanner(new SymbolCache());
+  const symbolCache = new SymbolCache();
+  const symbolScanner = new SymbolScanner(symbolCache);
   registerReadFileTool(pi, anchors);
   registerEditFileTool(pi, anchors);
   registerGetFileSkeletonTool(pi, anchors);
@@ -53,6 +53,7 @@ export default function diracToolsExtension(pi: ExtensionAPI): void {
   });
 
   pi.on("session_start", async (_event, ctx) => {
+    symbolCache.clear();
     baselineActiveTools = [...pi.getActiveTools()];
     currentMode = parseToolMode(pi.getFlag("dirac-tools-mode"));
     const active = activeToolsForMode(currentMode, baselineActiveTools);
