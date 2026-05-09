@@ -942,7 +942,7 @@ npm test && npm run typecheck
 
 Expected: all tests pass and typecheck passes.
 
-Verification evidence: `npm test && npm run typecheck` passed with 10 test files / 62 tests.
+Verification evidence: `npm test && npm run typecheck` passed with 10 test files / 64 tests after code-review fixes.
 
 - [x] **Step 3: Smoke-test against a copied Dirac source file**
 

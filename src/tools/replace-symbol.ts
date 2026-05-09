@@ -41,6 +41,23 @@ function missingSymbolMessage(replacement: SymbolReplacement): string {
   return `Symbol '${replacement.symbol}'${replacement.type ? ` of type '${replacement.type}'` : ""} not found in ${replacement.path}.`;
 }
 
+interface PreparedFileReplacementBatch {
+  batch: FileReplacementBatch;
+  finalContent: string;
+  finalLines: string[];
+}
+
+async function withFileMutationQueues<T>(absolutePaths: string[], fn: () => Promise<T>): Promise<T> {
+  const uniquePaths = Array.from(new Set(absolutePaths)).sort();
+
+  const runWithQueue = async (index: number): Promise<T> => {
+    if (index >= uniquePaths.length) return fn();
+    return withFileMutationQueue(uniquePaths[index], () => runWithQueue(index + 1));
+  };
+
+  return runWithQueue(0);
+}
+
 export function groupReplacementsByPath(replacements: SymbolReplacement[], cwd: string): FileReplacementBatch[] {
   const batches = new Map<string, FileReplacementBatch>();
 
@@ -107,9 +124,10 @@ export function registerReplaceSymbolTool(pi: ExtensionAPI, anchors: AnchorState
       const batches = groupReplacementsByPath(replacements, ctx.cwd);
       const summaries: string[] = [];
 
-      for (const batch of batches) {
-        throwIfAborted(signal);
-        await withFileMutationQueue(batch.absolutePath, async () => {
+      await withFileMutationQueues(batches.map((batch) => batch.absolutePath), async () => {
+        const preparedBatches: PreparedFileReplacementBatch[] = [];
+
+        for (const batch of batches) {
           throwIfAborted(signal);
           const originalContent = await readFile(batch.absolutePath, { encoding: "utf8", signal });
           const lineEnding = detectLineEnding(originalContent);
@@ -126,18 +144,24 @@ export function registerReplaceSymbolTool(pi: ExtensionAPI, anchors: AnchorState
 
           throwIfAborted(signal);
           const finalContent = applyResolvedSymbolReplacements(originalContent, resolved, lineEnding);
+          preparedBatches.push({
+            batch,
+            finalContent,
+            finalLines: finalContent.split(/\r?\n/),
+          });
+        }
 
-
+        for (const prepared of preparedBatches) {
           throwIfAborted(signal);
-          await mkdir(dirname(batch.absolutePath), { recursive: true });
+          await mkdir(dirname(prepared.batch.absolutePath), { recursive: true });
           throwIfAborted(signal);
-          await writeFile(batch.absolutePath, finalContent, { encoding: "utf8", signal });
-          anchors.reconcile(batch.absolutePath, finalContent.split(/\r?\n/));
+          await writeFile(prepared.batch.absolutePath, prepared.finalContent, { encoding: "utf8", signal });
+          anchors.reconcile(prepared.batch.absolutePath, prepared.finalLines);
 
-          const symbolList = batch.replacements.map((replacement) => `'${replacement.symbol}'`).join(", ");
-          summaries.push(`Successfully replaced symbols ${symbolList} in ${batch.displayPath}. Any existing hash anchors for these symbols are now stale.`);
-        });
-      }
+          const symbolList = prepared.batch.replacements.map((replacement) => `'${replacement.symbol}'`).join(", ");
+          summaries.push(`Successfully replaced symbols ${symbolList} in ${prepared.batch.displayPath}. Any existing hash anchors for these symbols are now stale.`);
+        }
+      });
 
       return {
         content: [{ type: "text", text: summaries.join("\n\n") }],

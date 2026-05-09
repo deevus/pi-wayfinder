@@ -293,6 +293,33 @@ describe("replace_symbol tool", () => {
     await expect(readFile(filePath, "utf8")).resolves.toBe(original);
   });
 
+  it("writes nothing in earlier files when a later file is missing a symbol", async () => {
+    const cwd = await createTempDir();
+    const firstPath = join(cwd, "first.ts");
+    const secondPath = join(cwd, "second.ts");
+    const firstOriginal = "export function first() {\n  return 1;\n}\n";
+    const secondOriginal = "export const value = 2;\n";
+    await writeFile(firstPath, firstOriginal, "utf8");
+    await writeFile(secondPath, secondOriginal, "utf8");
+
+    const tool = registerToolForTest();
+    await expect(tool.execute(
+      "call-5b",
+      {
+        replacements: [
+          { path: "first.ts", symbol: "first", type: "function", text: "export function first() {\n  return 10;\n}" },
+          { path: "second.ts", symbol: "missing", type: "function", text: "export function missing() {}" },
+        ],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    )).rejects.toThrow("Symbol 'missing' of type 'function' not found in second.ts.");
+
+    await expect(readFile(firstPath, "utf8")).resolves.toBe(firstOriginal);
+    await expect(readFile(secondPath, "utf8")).resolves.toBe(secondOriginal);
+  });
+
   it("rejects overlapping replacements and writes nothing", async () => {
     const cwd = await createTempDir();
     const filePath = join(cwd, "sample.ts");
@@ -319,6 +346,40 @@ describe("replace_symbol tool", () => {
       { cwd } as never,
     )).rejects.toThrow(/Overlapping replacements detected/);
     await expect(readFile(filePath, "utf8")).resolves.toBe(original);
+  });
+
+  it("writes nothing in earlier files when a later file has overlapping replacements", async () => {
+    const cwd = await createTempDir();
+    const firstPath = join(cwd, "first.ts");
+    const secondPath = join(cwd, "second.ts");
+    const firstOriginal = "export function first() {\n  return 1;\n}\n";
+    const secondOriginal = [
+      "class Service {",
+      "  run() {",
+      "    return 1;",
+      "  }",
+      "}",
+    ].join("\n");
+    await writeFile(firstPath, firstOriginal, "utf8");
+    await writeFile(secondPath, secondOriginal, "utf8");
+
+    const tool = registerToolForTest();
+    await expect(tool.execute(
+      "call-6b",
+      {
+        replacements: [
+          { path: "first.ts", symbol: "first", type: "function", text: "export function first() {\n  return 10;\n}" },
+          { path: "second.ts", symbol: "Service", type: "class", text: "class Service {}" },
+          { path: "second.ts", symbol: "Service.run", type: "method", text: "  run() {\n    return 2;\n  }" },
+        ],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    )).rejects.toThrow(/Overlapping replacements detected/);
+
+    await expect(readFile(firstPath, "utf8")).resolves.toBe(firstOriginal);
+    await expect(readFile(secondPath, "utf8")).resolves.toBe(secondOriginal);
   });
 
   it("preserves CRLF line endings and strips hash anchors from replacement text", async () => {
