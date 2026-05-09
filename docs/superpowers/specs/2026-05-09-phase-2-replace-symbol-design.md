@@ -2,16 +2,16 @@
 
 ## Goal
 
-Add a pi `replace_symbol` tool to `pi-dirac-tools` that replaces complete AST symbols by name, matching Dirac's semantics while preserving the adjacent-comment range improvement already implemented in Phase 1.
+Add a pi `replace_symbol` tool to `pi-dirac-tools` that replaces complete AST symbols by name. The tool is Dirac-inspired, but `pi-dirac-tools` is a hard fork and should choose the cleaner pi-native semantics where they differ.
 
 ## Context
 
 Phase 1 added tree-sitter-backed symbol discovery and `ASTAnchorBridge.getSymbolRange(...)`. Phase 2 builds on that foundation to support whole-symbol edits: functions, methods, classes, interfaces, and const/arrow-function definitions supported by the existing tree-sitter queries.
 
-Dirac's `replace_symbol` behavior is the compatibility target:
+The behavior is based on Dirac's `replace_symbol`, with deliberate hard-fork choices:
 
-- canonical input is a batch `replacements` array;
-- legacy single replacement input may be tolerated;
+- input is a batch-only `replacements` array;
+- legacy single replacement input is not part of the public API;
 - symbols are resolved with exact full-name match or suffix match;
 - the first matching symbol in query order wins;
 - optional `type` filters matches, with `function` and `method` treated as synonyms;
@@ -47,7 +47,7 @@ Each replacement object contains:
 - `text` — complete final code to replace the symbol range. The caller is responsible for correct syntax and indentation.
 - `type` — optional symbol kind hint, such as `function`, `method`, `class`, or `interface`.
 
-The tool may also accept legacy top-level `path`, `symbol`, `text`, and `type` parameters by converting them into a single-element `replacements` array. The prompt and schema should prefer the batch form.
+The public schema should require the batch form. Top-level `path`, `symbol`, `text`, and `type` are intentionally not supported for Phase 2.
 
 ## Range Semantics
 
@@ -59,7 +59,7 @@ The replaced range includes:
 - enclosing wrappers such as export/declaration/decorator wrappers already included by the Phase 1 bridge;
 - adjacent preceding comments, decorators, or attributes.
 
-Unlike current Dirac, `pi-dirac-tools` keeps the Phase 1 safety improvement: detached comments separated by a blank line are not included. This avoids replacing unrelated comments while preserving normal JSDoc/decorator behavior.
+`pi-dirac-tools` keeps the Phase 1 safety improvement: detached comments separated by a blank line are not included. This avoids replacing unrelated comments while preserving normal JSDoc/decorator behavior.
 
 ## Matching Semantics
 
@@ -74,7 +74,7 @@ For each replacement:
 5. Apply `type` filtering if provided.
 6. Return the first compatible match.
 
-Ambiguous suffixes are not rejected. This matches Dirac's current behavior.
+Ambiguous suffixes are not rejected. The first compatible match wins.
 
 ## Edit Application Semantics
 
@@ -117,7 +117,7 @@ Files expected to change:
 - `src/tools/schemas.ts` — schema for `replace_symbol`.
 - `src/index.ts` — tool registration.
 - `src/prompt.ts` — prompt guidance explaining when and how to use `replace_symbol`.
-- `src/mode.ts` — include `replace_symbol` in preferred/replacement-mode guidance if needed.
+- `src/mode.ts` — include `replace_symbol` in all modes.
 - `test/replace-symbol.test.ts` — behavior tests.
 - `README.md` — short documentation section.
 
