@@ -9,6 +9,7 @@ import { registerFindSymbolReferencesTool } from "./tools/find-symbol-references
 import { registerGetFileSkeletonTool } from "./tools/get-file-skeleton.js";
 import { registerGetFunctionTool } from "./tools/get-function.js";
 import { registerReadFileTool } from "./tools/read-file.js";
+import { registerRenameSymbolTool } from "./tools/rename-symbol.js";
 import { registerReplaceSymbolTool } from "./tools/replace-symbol.js";
 
 export default function diracToolsExtension(pi: ExtensionAPI): void {
@@ -22,6 +23,7 @@ export default function diracToolsExtension(pi: ExtensionAPI): void {
   registerReplaceSymbolTool(pi, anchors);
 
   registerFindSymbolReferencesTool(pi, anchors, symbolScanner);
+  registerRenameSymbolTool(pi, anchors, symbolScanner);
 
   let baselineActiveTools: string[] | undefined;
 

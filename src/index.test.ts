@@ -64,6 +64,16 @@ function createContext(): UiContext {
   };
 }
 
+const expectedDiracTools = [
+  "read_file",
+  "edit_file",
+  "get_file_skeleton",
+  "get_function",
+  "replace_symbol",
+  "find_symbol_references",
+  "rename_symbol"
+];
+
 describe("diracToolsExtension", () => {
   it("switches modes from the session-start active tool baseline", async () => {
     const mock = createMockPi(["read", "edit", "custom"]);
@@ -73,49 +83,16 @@ describe("diracToolsExtension", () => {
 
     expect(mock.sessionStartHandler).toBeDefined();
     await mock.sessionStartHandler?.({}, ctx);
-    expect(mock.activeTools).toEqual([
-      "read",
-      "edit",
-      "custom",
-      "read_file",
-      "edit_file",
-      "get_file_skeleton",
-      "get_function",
-      "replace_symbol",
-      "find_symbol_references"
-    ]);
+    expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedDiracTools]);
 
     const command = mock.commands.get("dirac-tools");
     expect(command).toBeDefined();
 
     await command?.handler("replacement", ctx);
-    expect(mock.activeTools).toEqual([
-      "custom",
-      "read_file",
-      "edit_file",
-      "get_file_skeleton",
-      "get_function",
-      "replace_symbol",
-      "find_symbol_references",
-      "write",
-      "bash",
-      "grep",
-      "find",
-      "ls"
-    ]);
+    expect(mock.activeTools).toEqual(["custom", ...expectedDiracTools, "write", "bash", "grep", "find", "ls"]);
 
     await command?.handler("additive", ctx);
-    expect(mock.activeTools).toEqual([
-      "read",
-      "edit",
-      "custom",
-      "read_file",
-      "edit_file",
-      "get_file_skeleton",
-      "get_function",
-      "replace_symbol",
-      "find_symbol_references"
-    ]);
+    expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedDiracTools]);
   });
 
   it("uses command-selected mode for injected prompt guidance", async () => {
@@ -142,13 +119,6 @@ describe("diracToolsExtension", () => {
     diracToolsExtension(mock.pi as unknown as ExtensionAPI);
 
     const registeredNames = mock.pi.registerTool.mock.calls.map(([tool]) => tool.name);
-    expect(registeredNames).toEqual([
-      "read_file",
-      "edit_file",
-      "get_file_skeleton",
-      "get_function",
-      "replace_symbol",
-      "find_symbol_references"
-    ]);
+    expect(registeredNames).toEqual(expectedDiracTools);
   });
 });

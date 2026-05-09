@@ -23,6 +23,7 @@ replace_symbol rules:
 
 Symbol navigation rules:
 - Use find_symbol_references to inspect exact AST definitions/references before broad rename work.
+- Use rename_symbol for exact symbol renames across files/directories; it renames definitions and references together.
 `;
 
   if (mode === "replacement") {

@@ -50,3 +50,9 @@ export const FindSymbolReferencesSchema = Type.Object({
     Type.Literal("both")
   ]))
 });
+
+export const RenameSymbolSchema = Type.Object({
+  paths: Type.Array(Type.String({ description: "Relative or absolute files/directories to rename within" })),
+  existing_symbol: Type.String({ description: "Exact symbol text to rename" }),
+  new_symbol: Type.String({ description: "Replacement symbol text" })
+});
