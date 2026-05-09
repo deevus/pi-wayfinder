@@ -102,4 +102,37 @@ describe("SymbolScanner", () => {
       expect.objectContaining({ name: "first", type: "definition" }),
     ]));
   });
+
+  it("scans representative fixtures across supported tree-sitter extensions", async () => {
+    const cwd = await createTempDir();
+    const fixtures: Record<string, string> = {
+      "sample.ts": "export function tsName() { return tsName(); }\n",
+      "sample.tsx": "export function TsxName() { return <div />; }\n",
+      "sample.js": "function jsName() { return jsName(); }\n",
+      "sample.jsx": "function JsxName() { return <div />; }\n",
+      "sample.py": "def py_name():\n    return py_name()\n",
+      "sample.go": "package main\nfunc goName() { goName() }\n",
+      "sample.rs": "fn rust_name() { rust_name(); }\n",
+      "sample.c": "void c_name() { c_name(); }\n",
+      "sample.cpp": "void cppName() { cppName(); }\n",
+      "sample.cs": "class CSharpSample { void CsName() { CsName(); } }\n",
+      "sample.rb": "def ruby_name\n  ruby_name\nend\n",
+      "Sample.java": "class Sample { void javaName() { javaName(); } }\n",
+      "sample.php": "<?php function php_name() { php_name(); }\n",
+      "sample.swift": "func swiftName() { swiftName() }\n",
+      "sample.kt": "fun kotlinName() { kotlinName() }\n",
+    };
+
+    for (const [fileName, content] of Object.entries(fixtures)) {
+      await writeFile(join(cwd, fileName), content, "utf8");
+    }
+
+    const scanner = new SymbolScanner(new SymbolCache());
+    const locations = await scanner.scanPaths(["."], cwd);
+    const definitions = locations.filter((location) => location.type === "definition").map((location) => location.displayPath);
+
+    for (const fileName of Object.keys(fixtures)) {
+      expect(definitions, `expected at least one definition in ${fileName}`).toContain(fileName);
+    }
+  });
 });
