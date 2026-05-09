@@ -81,7 +81,8 @@ describe("diracToolsExtension", () => {
       "edit_file",
       "get_file_skeleton",
       "get_function",
-      "replace_symbol"
+      "replace_symbol",
+      "find_symbol_references"
     ]);
 
     const command = mock.commands.get("dirac-tools");
@@ -95,6 +96,7 @@ describe("diracToolsExtension", () => {
       "get_file_skeleton",
       "get_function",
       "replace_symbol",
+      "find_symbol_references",
       "write",
       "bash",
       "grep",
@@ -111,7 +113,8 @@ describe("diracToolsExtension", () => {
       "edit_file",
       "get_file_skeleton",
       "get_function",
-      "replace_symbol"
+      "replace_symbol",
+      "find_symbol_references"
     ]);
   });
 
@@ -144,7 +147,8 @@ describe("diracToolsExtension", () => {
       "edit_file",
       "get_file_skeleton",
       "get_function",
-      "replace_symbol"
+      "replace_symbol",
+      "find_symbol_references"
     ]);
   });
 });

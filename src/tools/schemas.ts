@@ -39,3 +39,14 @@ export const ReplaceSymbolSchema = Type.Object({
     type: Type.Optional(Type.String({ description: "Optional symbol type such as function, method, class, or interface" }))
   }))
 });
+
+
+export const FindSymbolReferencesSchema = Type.Object({
+  paths: Type.Array(Type.String({ description: "Relative or absolute files/directories to search" })),
+  symbols: Type.Array(Type.String({ description: "Exact symbol names to find" })),
+  find_type: Type.Optional(Type.Union([
+    Type.Literal("definition"),
+    Type.Literal("reference"),
+    Type.Literal("both")
+  ]))
+});
