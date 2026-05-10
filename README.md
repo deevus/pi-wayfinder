@@ -1,8 +1,21 @@
 # pi-wayfinder
 
-Structure-aware code navigation and anchor-stable editing tools for pi.
+Structure-aware code navigation and anchor-stable editing tools for pi agents.
 
-Wayfinder gives pi agents AST-backed code maps, symbol search, safe renames, whole-symbol replacement, and stable anchored edits so they can change code without brittle line guesses.
+Wayfinder helps agents keep code context focused: compact file skeletons, targeted function reads, stable anchored edits, whole-symbol replacement, and exact symbol search/rename. It is designed to reduce wasted context and failed edit loops without making benchmark claims before we have measured results.
+
+## Why context stays focused
+
+Wayfinder gives agents precise source-code tools instead of forcing broad file reads and brittle line-number edits:
+
+- `get_file_skeleton` returns a compact outline before reading full source.
+- `get_function` reads only the definitions needed for the task.
+- `read_file` supports stable anchors and narrow line ranges.
+- `edit_file` batches precise edits across one or more files by anchor.
+- `replace_symbol` rewrites complete functions, methods, classes, interfaces, or exported const/arrow functions.
+- `find_symbol_references` and `rename_symbol` avoid manual grep-and-edit loops.
+
+Anchors add a small prefix to returned source lines, but they are intended to prevent repeated reads, failed edits, and correction turns.
 
 ## Modes
 
