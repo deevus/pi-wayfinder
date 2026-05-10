@@ -1,5 +1,5 @@
 {
-  "name": "pi-wayfinder",
+  "name": "@deevus/pi-wayfinder",
   "version": "0.1.0",
   "description": "Structure-aware code navigation and anchor-stable editing tools for pi agents.",
   "type": "module",

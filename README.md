@@ -17,6 +17,19 @@ Wayfinder gives agents precise source-code tools instead of forcing broad file r
 
 Anchors add a small prefix to returned source lines, but they are intended to prevent repeated reads, failed edits, and correction turns.
 
+## Install
+
+```bash
+pi install npm:@deevus/pi-wayfinder
+```
+
+For local development:
+
+```bash
+pi -e . --wayfinder-mode preferred
+```
+
+
 ## Modes
 
 - `additive`: add Wayfinder tools without changing pi built-ins.
@@ -29,7 +42,7 @@ Anchors add a small prefix to returned source lines, but they are intended to pr
 
 A future explicit `--wayfinder-override-builtins read_edit` mode can register tools named `read` and `edit`, but that is intentionally separate because overriding built-ins can surprise existing workflows.
 
-Run:
+Run from a local checkout:
 
 ```bash
 pi -e . --wayfinder-mode preferred
