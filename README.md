@@ -2,7 +2,7 @@
 
 Structure-aware code navigation and anchor-stable editing tools for pi agents.
 
-Wayfinder helps agents keep code context focused: compact file skeletons, targeted function reads, stable anchored edits, whole-symbol replacement, and exact symbol search/rename. It is designed to reduce wasted context and failed edit loops without making benchmark claims before we have measured results.
+Wayfinder helps agents keep code context focused with compact file skeletons, targeted function reads, stable anchored edits, whole-symbol replacement, and exact symbol search/rename.
 
 ## Why context stays focused
 
