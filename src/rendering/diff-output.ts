@@ -137,8 +137,9 @@ export function createUnifiedDiff(path: string, before: string, after: string): 
 }
 
 export function combineDiffs(diffs: Array<Pick<DiffDetails, "path" | "diff">>): string {
-  return diffs
-    .map((item) => item.diff.trimEnd().length > 0 ? `Index: ${item.path}\n${item.diff.trimEnd()}` : "")
-    .filter((diff) => diff.length > 0)
+  const nonEmptyDiffs = diffs.filter((item) => item.diff.trimEnd().length > 0);
+  if (nonEmptyDiffs.length === 1) return nonEmptyDiffs[0].diff.trimEnd();
+  return nonEmptyDiffs
+    .map((item) => `Index: ${item.path}\n${item.diff.trimEnd()}`)
     .join("\n\n");
 }

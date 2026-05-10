@@ -81,10 +81,12 @@ describe("diff-output", () => {
     expect(result.firstChangedLine).toBeUndefined();
   });
 
-  it("combines multi-file diffs with blank separators", () => {
+  it("combines diffs without single-file headers and with multi-file separators", () => {
     const first = createUnifiedDiff("first.ts", "a\n", "b\n");
     const second = createUnifiedDiff("second.ts", "x\n", "y\n");
 
+    expect(combineDiffs([first])).not.toContain("Index: first.ts");
+    expect(combineDiffs([first])).toContain("-1 a");
     expect(combineDiffs([first, second])).toContain("Index: first.ts");
     expect(combineDiffs([first, second])).toContain("Index: second.ts");
     expect(combineDiffs([first, { path: "empty.ts", diff: "" }, second])).not.toContain("empty.ts");
@@ -140,6 +142,7 @@ describe("pi render helpers", () => {
     const rendered = result.render(120).join("\n");
 
     expect(rendered).toContain("const value");
+    expect(rendered).not.toContain("Updated sample.ts");
   });
 });
 
@@ -179,6 +182,7 @@ describe("mutating tool renderers", () => {
 
     const rendered = result?.render(120).join("\n") || "";
     expect(rendered).toContain("const value");
+    expect(rendered).not.toContain("Updated sample.ts");
   });
 
   it("edit_file renderer displays diff output when collapsed", () => {
@@ -193,6 +197,7 @@ describe("mutating tool renderers", () => {
 
     const rendered = result?.render(120).join("\n") || "";
     expect(rendered).toContain("const value");
+    expect(rendered).not.toContain("Updated sample.ts");
   });
 });
 

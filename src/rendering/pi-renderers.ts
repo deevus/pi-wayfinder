@@ -1,6 +1,6 @@
 import type { AgentToolResult, Theme, ToolRenderResultOptions } from "@mariozechner/pi-coding-agent";
 import { getLanguageFromPath, highlightCode, renderDiff } from "@mariozechner/pi-coding-agent";
-import { Container, Spacer, Text } from "@mariozechner/pi-tui";
+import { Container, Text } from "@mariozechner/pi-tui";
 
 const RAW_ANCHOR_PREFIX = /^[A-Z][a-zA-Z]*│/;
 const SYMBOL_ANCHOR_PREFIX = /^(\s*\([^)]*\)\s+)[A-Z][a-zA-Z]*│/;
@@ -109,9 +109,6 @@ export function renderDiffResult(
     return component;
   }
 
-  const summary = getTextOutput(result).split("\n")[0] || partialLabel;
-  component.addChild(new Text(theme.fg("success", summary), 0, 0));
-  component.addChild(new Spacer(1));
   component.addChild(new Text(renderDiff(diff), 0, 0));
   return component;
 }
