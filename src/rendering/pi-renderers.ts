@@ -36,12 +36,12 @@ function isDisplayMetadataLine(line: string): boolean {
 export function stripAnchorPrefixesForDisplay(text: string): string {
   return text
     .split("\n")
+    .filter((line) => !isDisplayMetadataLine(line))
     .map((line) => {
       const symbolMatch = line.match(SYMBOL_ANCHOR_PREFIX);
       if (symbolMatch) return line.replace(SYMBOL_ANCHOR_PREFIX, symbolMatch[1]);
       return line.replace(RAW_ANCHOR_PREFIX, "");
     })
-    .filter((line) => !isDisplayMetadataLine(line))
     .join("\n");
 }
 

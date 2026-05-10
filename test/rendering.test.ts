@@ -98,6 +98,10 @@ describe("pi render helpers", () => {
     expect(stripAnchorPrefixesForDisplay("no anchor here")).toBe("no anchor here");
   });
 
+  it("hides only unanchored display metadata lines", () => {
+    expect(stripAnchorPrefixesForDisplay("--- src/sample.ts ---\n[File Hash: abc123]\nDiracA│[File Hash: source text]")).toBe("[File Hash: source text]");
+  });
+
   it("shortens long display paths", () => {
     expect(shortenDisplayPath("short.ts")).toBe("short.ts");
     expect(shortenDisplayPath("/tmp/a/very/long/path/sample.ts", 18)).toBe("…/path/sample.ts");
