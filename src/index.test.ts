@@ -100,7 +100,7 @@ describe("diracToolsExtension", () => {
     expect(command).toBeDefined();
 
     await command?.handler("replacement", ctx);
-    expect(mock.activeTools).toEqual(["custom", ...expectedDiracTools, "write", "bash", "grep", "find", "ls"]);
+    expect(mock.activeTools).toEqual(["read", "custom", ...expectedDiracTools, "write", "bash", "grep", "find", "ls"]);
 
     await command?.handler("additive", ctx);
     expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedDiracTools]);
@@ -146,7 +146,7 @@ describe("diracToolsExtension", () => {
     diracToolsExtension(mock.pi as unknown as ExtensionAPI);
     await mock.sessionStartHandler?.({}, ctx);
 
-    expect(mock.activeTools).toEqual(["custom", ...expectedDiracTools, "write", "bash", "grep", "find", "ls"]);
+    expect(mock.activeTools).toEqual(["read", "custom", ...expectedDiracTools, "write", "bash", "grep", "find", "ls"]);
     const result = await mock.beforeAgentStartHandler?.({ systemPrompt: "base" });
     expect(result?.systemPrompt).toContain("Replacement mode is active.");
   });

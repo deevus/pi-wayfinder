@@ -6,11 +6,11 @@ Dirac-style hash-anchored and AST-aware editing tools for pi.
 
 - `additive`: add Dirac tools without changing pi built-ins.
 - `preferred`: default; add Dirac tools and guide the model to prefer them for source edits.
-- `replacement`: deactivate pi `read` and `edit` from the active toolset and use `read_file` / `edit_file` instead.
+- `replacement`: deactivate pi `edit` from the active toolset and use Dirac source-editing tools instead; keep built-in `read` for images, PDFs, and binary/non-source assets.
 
 ## Built-in replacement
 
-`replacement` mode is a soft replacement: it removes pi `read` and `edit` from the active toolset and activates Dirac `read_file` and `edit_file`. It does not override pi's built-in implementations. This is the safest idiomatic pi behavior.
+`replacement` mode is a soft source-editing replacement: it removes pi `edit` from the active toolset and activates Dirac `read_file`, `edit_file`, and AST-aware tools. It intentionally keeps pi `read` active for images, PDFs, and binary/non-source assets. It does not override pi's built-in implementations. This is the safest idiomatic pi behavior.
 
 A future explicit `--dirac-override-builtins read_edit` mode can register tools named `read` and `edit`, but that is intentionally separate because overriding built-ins can surprise existing workflows.
 
