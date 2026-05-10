@@ -31,6 +31,15 @@ Inside pi:
 
 Slash-command mode changes are persisted in the current pi session and restored on reload/resume. An explicit `--dirac-tools-mode ...` flag takes precedence over the persisted session mode.
 
+## Reading files
+
+`read_file` accepts global `start_line` / `end_line` for applying the same line range to every requested file. For mixed reads where only one file needs a range, put the range on that path instead:
+
+```json
+{ "paths": ["PROJECTS/ROLLER/3d.h", "build.zig:150-230"] }
+```
+
+
 ## Smoke tests
 
 ```bash

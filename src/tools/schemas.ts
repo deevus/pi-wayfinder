@@ -1,7 +1,7 @@
 import { Type } from "typebox";
 
 export const ReadFileSchema = Type.Object({
-  paths: Type.Array(Type.String(), { description: "Relative or absolute file paths to read" }),
+  paths: Type.Array(Type.String(), { description: "Relative or absolute file paths to read. A path may include an inline range suffix like src/file.ts:10-50 or src/file.ts:100." }),
   start_line: Type.Optional(Type.Integer({ minimum: 1, description: "1-indexed start line" })),
   end_line: Type.Optional(Type.Integer({ minimum: 1, description: "1-indexed end line, inclusive" }))
 });

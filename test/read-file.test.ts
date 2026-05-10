@@ -79,6 +79,43 @@ describe("read_file tool", () => {
     expect(result.details).toEqual({ paths: ["@at-path.txt"] });
   });
 
+  it("supports inline per-path ranges without applying them to other paths", async () => {
+    const cwd = await createTempDir();
+    await writeFile(join(cwd, "short.txt"), "alpha\nbeta", "utf8");
+    await writeFile(join(cwd, "long.txt"), Array.from({ length: 5 }, (_, index) => `line-${index + 1}`).join("\n"), "utf8");
+
+    const tool = registerToolForTest();
+    const result = await tool.execute("call-inline-range", { paths: ["short.txt", "long.txt:3-4"] }, undefined, undefined, { cwd } as never);
+    const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+
+    expect(text).toContain("--- short.txt ---");
+    expect(text).toContain("DiracA│alpha");
+    expect(text).toContain("DiracB│beta");
+    expect(text).toContain("--- long.txt:3-4 ---");
+    expect(text).toContain("DiracC│line-3");
+    expect(text).toContain("DiracD│line-4");
+    expect(text).not.toContain("DiracE│line-5");
+  });
+
+  it("does not fail a mixed multi-file read when a global range starts beyond a short file", async () => {
+    const cwd = await createTempDir();
+    await writeFile(join(cwd, "short.txt"), "alpha\nbeta", "utf8");
+    await writeFile(join(cwd, "long.txt"), Array.from({ length: 5 }, (_, index) => `line-${index + 1}`).join("\n"), "utf8");
+
+    const tool = registerToolForTest();
+    const result = await tool.execute("call-mixed-range", { paths: ["short.txt", "long.txt"], start_line: 3, end_line: 4 }, undefined, undefined, { cwd } as never);
+    const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+
+    expect(text).toContain("--- short.txt ---");
+    expect(text).toContain("DiracA│alpha");
+    expect(text).toContain("DiracB│beta");
+    expect(text).toContain("--- long.txt ---");
+    expect(text).toContain("DiracC│line-3");
+    expect(text).toContain("DiracD│line-4");
+    expect(text).not.toContain("DiracE│line-5");
+  });
+
+
   it("declares line range parameters as positive integers", () => {
     const tool = registerToolForTest();
     const properties = (tool.parameters as { properties: Record<string, { type: string; minimum?: number }> }).properties;

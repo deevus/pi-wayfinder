@@ -10,6 +10,7 @@ When editing existing source files, prefer this workflow:
 3. Use edit_file for targeted source edits that are smaller than a complete symbol.
 4. Batch non-overlapping edits across files in one edit_file or replace_symbol call.
 5. Use pi built-in edit/write only when anchors or AST symbol replacement are unnecessary, such as small config files or brand-new files.
+6. For mixed read_file calls where only one file needs a line range, put the range on that path (for example, paths: ["src/a.ts", "build.zig:150-230"]) instead of using global start_line/end_line.
 
 Anchor rules:
 - Anchors have the form AnchorWord│exact line content.

@@ -163,6 +163,15 @@ describe("read-like tool renderers", () => {
     expect(rendered).not.toContain("File Hash");
   });
 
+  it("read_file call renderer makes global ranges explicit for all paths", () => {
+    const tool = collectTool(registerReadFileTool as never);
+    const call = tool.renderCall?.({ paths: ["short.txt", "long.txt"], start_line: 3, end_line: 4 } as never, theme as never, renderContext);
+    const rendered = call?.render(120).join("\n") || "";
+
+    expect(rendered).toContain("short.txt, long.txt");
+    expect(rendered).toContain("all:3-4");
+  });
+
   it("get_file_skeleton and get_function expose renderers", () => {
     expect(collectTool(registerGetFileSkeletonTool as never).renderResult).toBeTypeOf("function");
     expect(collectTool(registerGetFunctionTool as never).renderResult).toBeTypeOf("function");
