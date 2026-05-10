@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { formatLineWithHash } from "../anchors/line-hashing.js";
 import { ASTAnchorBridge } from "../ast/ast-anchor-bridge.js";
+import { renderCodeLikeCall, renderCodeLikeResult } from "../rendering/pi-renderers.js";
 import { appendOutputLine, appendTruncationNotice, createOutputAccumulator, throwIfAborted } from "./output-limits.js";
 import { GetFileSkeletonSchema } from "./schemas.js";
 
@@ -32,6 +33,13 @@ export function registerGetFileSkeletonTool(pi: ExtensionAPI, anchors: AnchorSta
     label: "Get File Skeleton",
     description: "Return a compact anchored outline of function/class definition lines.",
     parameters: GetFileSkeletonSchema,
+    renderCall(args, theme) {
+      const paths = Array.isArray(args.paths) ? args.paths : [];
+      return renderCodeLikeCall("get_file_skeleton", paths, theme);
+    },
+    renderResult(result, options, theme, context) {
+      return renderCodeLikeResult(result, options, theme, context);
+    },
     async execute(_id, params, signal, _onUpdate, ctx) {
       const output = createOutputAccumulator();
       let isFirstFile = true;

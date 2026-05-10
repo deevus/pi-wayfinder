@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { contentHash, formatLineWithHash } from "../anchors/line-hashing.js";
+import { renderCodeLikeCall, renderCodeLikeResult } from "../rendering/pi-renderers.js";
 import { appendOutputLine, appendTruncationNotice, createOutputAccumulator, throwIfAborted } from "./output-limits.js";
 import { ReadFileSchema } from "./schemas.js";
 
@@ -35,6 +36,16 @@ export function registerReadFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
     promptSnippet: "Read source files with stable line anchors for precise edit_file operations.",
     promptGuidelines: ["Use read_file before edit_file when changing existing source files."],
     parameters: ReadFileSchema,
+    renderCall(args, theme) {
+      const paths = Array.isArray(args.paths) ? args.paths : [];
+      const start = typeof args.start_line === "number" ? args.start_line : undefined;
+      const end = typeof args.end_line === "number" ? args.end_line : undefined;
+      const suffix = start || end ? theme.fg("warning", `:${start ?? 1}${end ? `-${end}` : ""}`) : "";
+      return renderCodeLikeCall("read_file", paths, theme, suffix);
+    },
+    renderResult(result, options, theme, context) {
+      return renderCodeLikeResult(result, options, theme, context);
+    },
     async execute(_id, params, signal, _onUpdate, ctx) {
       const output = createOutputAccumulator();
       let isFirstFile = true;

@@ -2,6 +2,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { readFile } from "node:fs/promises";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { formatLineWithHash } from "../anchors/line-hashing.js";
+import { renderCodeLikeCall, renderCodeLikeResult } from "../rendering/pi-renderers.js";
 import type { SymbolLocation, SymbolLocationType, SymbolScanner } from "../symbols/symbol-scanner.js";
 import { FindSymbolReferencesSchema } from "./schemas.js";
 
@@ -75,6 +76,15 @@ export function registerFindSymbolReferencesTool(pi: ExtensionAPI, anchors: Anch
       "Use find_symbol_references with narrow paths when possible to avoid broad symbol scans."
     ],
     parameters: FindSymbolReferencesSchema,
+    renderCall(args, theme) {
+      const paths = Array.isArray(args.paths) ? args.paths : [];
+      const symbols = Array.isArray(args.symbols) ? args.symbols.join(", ") : "";
+      const suffix = symbols ? theme.fg("dim", ` (${symbols})`) : "";
+      return renderCodeLikeCall("find_symbol_references", paths, theme, suffix);
+    },
+    renderResult(result, options, theme, context) {
+      return renderCodeLikeResult(result, options, theme, context);
+    },
     async execute(_id, params, signal, _onUpdate, ctx) {
       const paths = params.paths as string[] | undefined;
       const symbols = params.symbols as string[] | undefined;

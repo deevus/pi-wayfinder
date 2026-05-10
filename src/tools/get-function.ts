@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { contentHash, formatLineWithHash } from "../anchors/line-hashing.js";
 import { ASTAnchorBridge, type GetFunctionsResult } from "../ast/ast-anchor-bridge.js";
+import { renderCodeLikeCall, renderCodeLikeResult } from "../rendering/pi-renderers.js";
 import { appendOutputLine, appendTruncationNotice, createOutputAccumulator, throwIfAborted } from "./output-limits.js";
 import { GetFunctionSchema } from "./schemas.js";
 
@@ -269,6 +270,15 @@ export function registerGetFunctionTool(pi: ExtensionAPI, anchors: AnchorStateMa
     label: "Get Function",
     description: "Extract anchored implementations of named functions/classes from files.",
     parameters: GetFunctionSchema,
+    renderCall(args, theme) {
+      const paths = Array.isArray(args.paths) ? args.paths : [];
+      const names = Array.isArray(args.function_names) ? args.function_names.join(", ") : "";
+      const suffix = names ? theme.fg("dim", ` (${names})`) : "";
+      return renderCodeLikeCall("get_function", paths, theme, suffix);
+    },
+    renderResult(result, options, theme, context) {
+      return renderCodeLikeResult(result, options, theme, context);
+    },
     async execute(_id, params, signal, _onUpdate, ctx) {
       const output = createOutputAccumulator();
       let hasOutput = false;

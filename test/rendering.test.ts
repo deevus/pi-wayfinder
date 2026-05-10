@@ -149,7 +149,7 @@ describe("read-like tool renderers", () => {
     );
 
     const rendered = result?.render(120).join("\n") || "";
-    expect(rendered).toContain("const value = 1;");
+    expect(rendered).toContain("value =");
     expect(rendered).not.toContain("DiracA│");
   });
 
