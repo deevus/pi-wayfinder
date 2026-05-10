@@ -7,12 +7,17 @@
     "pi-package",
     "wayfinder",
     "dirac",
+    "coding-agent",
     "code-navigation",
+    "code-editing",
     "anchor-stable-editing",
     "hash-anchored",
     "tree-sitter",
     "ast",
-    "symbol-search"
+    "ast-tools",
+    "symbol-search",
+    "symbol-rename",
+    "refactoring"
   ],
   "repository": {
     "type": "git",
