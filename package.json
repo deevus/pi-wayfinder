@@ -1,15 +1,28 @@
 {
   "name": "pi-wayfinder",
   "version": "0.1.0",
-  "private": true,
+  "description": "Structure-aware code navigation and anchor-stable editing tools for pi agents.",
   "type": "module",
   "keywords": [
     "pi-package",
     "wayfinder",
+    "code-navigation",
+    "anchor-stable-editing",
     "hash-anchored",
     "tree-sitter",
     "ast",
     "symbol-search"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deevus/pi-wayfinder.git"
+  },
+  "files": [
+    "src/**/*.ts",
+    "!src/**/*.test.ts",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "test": "vitest run",
