@@ -203,4 +203,41 @@ describe("edit_file tool", () => {
     expect(confirm).not.toHaveBeenCalled();
     await expect(readFile(path, "utf8")).resolves.toBe("alpha\nBETA\n");
   });
+
+  it("returns unified diff details for anchored edits", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, "const value = 1;\nconsole.log(value);\n", "utf8");
+
+    const anchors = anchorsFor(["const value = 1;", "console.log(value);", ""]);
+    const tool = registerToolForTest();
+    const result = await tool.execute(
+      "call-diff",
+      {
+        files: [
+          {
+            path: "sample.ts",
+            edits: [
+              {
+                edit_type: "replace",
+                anchor: formatLineWithHash("const value = 1;", anchors[0]),
+                end_anchor: formatLineWithHash("const value = 1;", anchors[0]),
+                text: "const value = 2;"
+              }
+            ]
+          }
+        ]
+      },
+      undefined,
+      undefined,
+      { cwd } as never
+    );
+
+    expect(result.details).toMatchObject({ files: ["sample.ts"] });
+    expect(result.details?.diff).toContain("-const value = 1;");
+    expect(result.details?.diff).toContain("+const value = 2;");
+    expect(result.details?.diffs).toEqual([
+      expect.objectContaining({ path: "sample.ts", firstChangedLine: 1 })
+    ]);
+  });
 });

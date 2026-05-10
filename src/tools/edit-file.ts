@@ -4,6 +4,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { ANCHOR_DELIMITER, splitAnchor, stripHashes } from "../anchors/line-hashing.js";
+import { combineDiffs, createUnifiedDiff, type DiffDetails } from "../rendering/diff-output.js";
+import { renderCodeLikeCall, renderDiffResult } from "../rendering/pi-renderers.js";
 import { EditFileSchema } from "./schemas.js";
 
 export interface EditOperation {
@@ -17,6 +19,13 @@ interface ResolvedEdit {
   edit: EditOperation;
   start: number;
   end: number;
+}
+
+interface EditFileToolDetails {
+  files: string[];
+  diff: string;
+  diffs: DiffDetails[];
+  firstChangedLine?: number;
 }
 
 function detectLineEnding(content: string): "\r\n" | "\n" {
@@ -85,8 +94,16 @@ export function registerEditFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
       "Use edit_file for source-code edits after reading anchors with read_file, get_function, or get_file_skeleton."
     ],
     parameters: EditFileSchema,
+    renderCall(args, theme) {
+      const files = Array.isArray(args.files) ? args.files.map((file) => file.path).filter((path): path is string => typeof path === "string") : [];
+      return renderCodeLikeCall("edit_file", files, theme);
+    },
+    renderResult(result, options, theme, context) {
+      return renderDiffResult(result as never, options, theme, context, "Editing");
+    },
     async execute(_id, params, signal, _onUpdate, ctx) {
       const summaries: string[] = [];
+      const diffs: DiffDetails[] = [];
 
       for (const file of params.files) {
         throwIfAborted(signal);
@@ -104,7 +121,8 @@ export function registerEditFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
           const nextLines = applyAnchoredEdits(lines, currentAnchors, file.edits);
           throwIfAborted(signal);
           const nextContent = nextLines.join(lineEnding);
-
+          const diff = createUnifiedDiff(file.path, content, nextContent);
+          if (diff.diff) diffs.push(diff);
 
           throwIfAborted(signal);
           await mkdir(dirname(absolutePath), { recursive: true });
@@ -117,7 +135,12 @@ export function registerEditFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
 
       return {
         content: [{ type: "text", text: summaries.join("\n") }],
-        details: { files: params.files.map((file) => file.path) }
+        details: {
+          files: params.files.map((file) => file.path),
+          diffs,
+          diff: combineDiffs(diffs),
+          firstChangedLine: diffs[0]?.firstChangedLine
+        } satisfies EditFileToolDetails
       };
     }
   });
