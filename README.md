@@ -51,9 +51,11 @@ Verification note: On 2026-05-08 during Task 7, package checks plus additive and
 
 ## Tree-sitter AST tools
 
-`get_file_skeleton` and `get_function` use Dirac-style tree-sitter parsing for supported source files. Supported extensions include `ts`, `tsx`, `js`, `jsx`, `py`, `rs`, `go`, `c`, `h`, `cpp`, `hpp`, `cs`, `rb`, `java`, `php`, `swift`, and `kt`.
+`get_file_skeleton` and `get_function` use Dirac-style tree-sitter parsing for supported source files. Supported extensions include `bash`, `sh`, `zsh`, `ts`, `tsx`, `js`, `jsx`, `py`, `rs`, `go`, `c`, `h`, `cpp`, `cc`, `cxx`, `hpp`, `hh`, `hxx`, `cs`, `css`, `el`, `elisp`, `ex`, `exs`, `html`, `htm`, `rb`, `java`, `json`, `php`, `swift`, `kt`, `kts`, `lua`, `m`, `mm`, `ml`, `mli`, `res`, `resi`, `scala`, `sc`, `sol`, `rdl`, `tla`, `toml`, `vue`, and `zig`.
 
 For unsupported languages or parser load failures, the tools fall back to the conservative regex MVP for common JavaScript, TypeScript, and Python top-level definitions.
+
+Some bundled tree-sitter WASMs are intentionally not enabled yet because they are incompatible with the current `web-tree-sitter` runtime or fail to parse reliably in Node: Dart, Elm, QL, and YAML.
 
 ## Symbol replacement
 

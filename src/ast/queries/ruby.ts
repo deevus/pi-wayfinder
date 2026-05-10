@@ -66,6 +66,26 @@ export default `
   key: (simple_symbol) @name.definition.method
   value: (lambda)) @definition.method
 
+;; Plain definitions (doc-comment patterns above do not match every parser/runtime combination)
+(method
+  name: (_) @name.definition.method) @definition.method
+
+(singleton_method
+  name: (_) @name.definition.method) @definition.method
+
+(class
+  name: [
+    (constant) @name.definition.class
+    (scope_resolution name: (_) @name.definition.class)
+  ]) @definition.class
+
+(module
+  name: [
+    (constant) @name.definition.module
+    (scope_resolution name: (_) @name.definition.module)
+  ]) @definition.module
+
+
 ;; References
 (identifier) @name.reference
 (constant) @name.reference

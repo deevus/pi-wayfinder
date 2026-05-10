@@ -3,19 +3,36 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import Parser from "web-tree-sitter";
 import {
+  bashQuery,
   cppQuery,
   cQuery,
   csharpQuery,
+  cssQuery,
+  elispQuery,
+  elixirQuery,
   goQuery,
+  htmlQuery,
   javaQuery,
   javascriptQuery,
+  jsonQuery,
   kotlinQuery,
+  luaQuery,
+  objcQuery,
+  ocamlQuery,
   phpQuery,
   pythonQuery,
+  rescriptQuery,
   rubyQuery,
   rustQuery,
+  scalaQuery,
+  solidityQuery,
   swiftQuery,
+  systemrdlQuery,
+  tlaplusQuery,
+  tomlQuery,
   typescriptQuery,
+  vueQuery,
+  zigQuery,
 } from "./queries/index.js";
 
 export interface LanguageParser {
@@ -75,8 +92,12 @@ async function initializeParser(): Promise<void> {
   return initializationPromise;
 }
 
-function languageForExtension(ext: string): { langName: string; queryText: string } {
+export function languageForExtension(ext: string): { langName: string; queryText: string } {
   switch (ext) {
+    case "bash":
+    case "sh":
+    case "zsh":
+      return { langName: "bash", queryText: bashQuery };
     case "js":
     case "jsx":
       return { langName: "javascript", queryText: javascriptQuery };
@@ -91,23 +112,67 @@ function languageForExtension(ext: string): { langName: string; queryText: strin
     case "go":
       return { langName: "go", queryText: goQuery };
     case "cpp":
+    case "cc":
+    case "cxx":
     case "hpp":
+    case "hh":
+    case "hxx":
       return { langName: "cpp", queryText: cppQuery };
     case "c":
     case "h":
       return { langName: "c", queryText: cQuery };
     case "cs":
       return { langName: "c_sharp", queryText: csharpQuery };
+    case "css":
+      return { langName: "css", queryText: cssQuery };
+    case "el":
+    case "elisp":
+      return { langName: "elisp", queryText: elispQuery };
+    case "ex":
+    case "exs":
+      return { langName: "elixir", queryText: elixirQuery };
+    case "html":
+    case "htm":
+      return { langName: "html", queryText: htmlQuery };
     case "rb":
       return { langName: "ruby", queryText: rubyQuery };
     case "java":
       return { langName: "java", queryText: javaQuery };
+    case "json":
+      return { langName: "json", queryText: jsonQuery };
     case "php":
       return { langName: "php", queryText: phpQuery };
     case "swift":
       return { langName: "swift", queryText: swiftQuery };
     case "kt":
+    case "kts":
       return { langName: "kotlin", queryText: kotlinQuery };
+    case "lua":
+      return { langName: "lua", queryText: luaQuery };
+    case "m":
+    case "mm":
+      return { langName: "objc", queryText: objcQuery };
+    case "ml":
+    case "mli":
+      return { langName: "ocaml", queryText: ocamlQuery };
+    case "res":
+    case "resi":
+      return { langName: "rescript", queryText: rescriptQuery };
+    case "scala":
+    case "sc":
+      return { langName: "scala", queryText: scalaQuery };
+    case "sol":
+      return { langName: "solidity", queryText: solidityQuery };
+    case "rdl":
+      return { langName: "systemrdl", queryText: systemrdlQuery };
+    case "tla":
+      return { langName: "tlaplus", queryText: tlaplusQuery };
+    case "toml":
+      return { langName: "toml", queryText: tomlQuery };
+    case "vue":
+      return { langName: "vue", queryText: vueQuery };
+    case "zig":
+      return { langName: "zig", queryText: zigQuery };
     default:
       throw new Error(`Unsupported language: ${ext}`);
   }

@@ -58,6 +58,66 @@ describe("tree-sitter language parser loader", () => {
     expect(parsers.jsx?.query).toBeDefined();
   });
 
+  it("compiles parsers and queries for all bundled compatible languages", async () => {
+    const extensions = [
+      "bash",
+      "sh",
+      "zsh",
+      "js",
+      "jsx",
+      "ts",
+      "tsx",
+      "py",
+      "rs",
+      "go",
+      "c",
+      "h",
+      "cpp",
+      "cc",
+      "cxx",
+      "hpp",
+      "hh",
+      "hxx",
+      "cs",
+      "css",
+      "el",
+      "elisp",
+      "ex",
+      "exs",
+      "html",
+      "htm",
+      "rb",
+      "java",
+      "json",
+      "php",
+      "swift",
+      "kt",
+      "kts",
+      "lua",
+      "m",
+      "mm",
+      "ml",
+      "mli",
+      "res",
+      "resi",
+      "scala",
+      "sc",
+      "sol",
+      "rdl",
+      "tla",
+      "toml",
+      "vue",
+      "zig",
+    ];
+
+    const parsers = await loadRequiredLanguageParsers(extensions.map((ext) => `sample.${ext}`));
+
+    for (const ext of extensions) {
+      expect(parsers[ext]?.parser, ext).toBeDefined();
+      expect(parsers[ext]?.query, ext).toBeDefined();
+    }
+  });
+
   it("throws an explicit unsupported-language error", async () => {
     await expect(loadRequiredLanguageParsers(["notes.txt"])).rejects.toThrow("Unsupported language: txt");
   });

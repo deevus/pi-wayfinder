@@ -22,6 +22,9 @@ describe("symbol scanner helpers", () => {
     expect(isSupportedSymbolPath("sample.ts")).toBe(true);
     expect(isSupportedSymbolPath("sample.tsx")).toBe(true);
     expect(isSupportedSymbolPath("sample.py")).toBe(true);
+    expect(isSupportedSymbolPath("sample.zig")).toBe(true);
+    expect(isSupportedSymbolPath("sample.lua")).toBe(true);
+    expect(isSupportedSymbolPath("sample.ex")).toBe(true);
     expect(isSupportedSymbolPath("README.md")).toBe(false);
     expect(isExcludedPathSegment("node_modules")).toBe(true);
     expect(isExcludedPathSegment("dist")).toBe(true);
@@ -121,6 +124,18 @@ describe("SymbolScanner", () => {
       "sample.php": "<?php function php_name() { php_name(); }\n",
       "sample.swift": "func swiftName() { swiftName() }\n",
       "sample.kt": "fun kotlinName() { kotlinName() }\n",
+      "sample.sh": "function shellName() { shellName; }\n",
+      "sample.zig": "fn zigName() void { zigName(); }\n",
+      "sample.lua": "local function luaName() luaName() end\n",
+      "sample.ex": "defmodule Sample do\n  def elixir_name(), do: elixir_name()\nend\n",
+      "sample.el": "(defun elisp-name () (elisp-name))\n",
+      "sample.ml": "let ocaml_name () = ocaml_name ()\n",
+      "sample.res": "let rescriptName = () => rescriptName()\n",
+      "sample.scala": "object Sample { def scalaName() = scalaName() }\n",
+      "sample.sol": "contract Sample { function solidityName() public { } }\n",
+      "sample.rdl": "addrmap rdlName { reg { field {} f; } r; };\n",
+      "sample.tla": "---- MODULE Sample ----\nVARIABLE x\ntlaName == x\n====\n",
+      "sample.css": ".cssName { color: red; }\n",
     };
 
     for (const [fileName, content] of Object.entries(fixtures)) {
