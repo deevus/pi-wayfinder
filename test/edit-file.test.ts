@@ -128,7 +128,33 @@ describe("applyAnchoredEdits", () => {
 
     expect(next).toEqual(["one", "TWO"]);
   });
+
+  it("treats replace_range as replace for anchored ranges", () => {
+    const lines = ["one", "two", "three", "four"];
+    const anchors = anchorsFor(lines);
+
+    const next = applyAnchoredEdits(lines, anchors, [
+      {
+        edit_type: "replace_range",
+        anchor: formatLineWithHash("two", anchors[1]),
+        end_anchor: formatLineWithHash("three", anchors[2]),
+        text: "TWO\nTHREE"
+      }
+    ]);
+
+    expect(next).toEqual(["one", "TWO", "THREE", "four"]);
+  });
 });
+
+describe("edit_file schema", () => {
+  it("accepts replace_range as an alias for replace", () => {
+    const tool = registerToolForTest();
+    const editType = (((tool.parameters as { properties: { files: { items: { properties: { edits: { items: { properties: { edit_type: { anyOf: Array<{ const: string }> } } } } } } } } }).properties.files.items.properties.edits.items.properties.edit_type.anyOf));
+
+    expect(editType.map((item) => item.const)).toContain("replace_range");
+  });
+});
+
 
 describe("edit_file tool", () => {
   it("preserves CRLF line endings when applying edits", async () => {

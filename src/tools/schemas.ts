@@ -12,6 +12,7 @@ export const EditFileSchema = Type.Object({
     edits: Type.Array(Type.Object({
       edit_type: Type.Union([
         Type.Literal("replace"),
+        Type.Literal("replace_range"),
         Type.Literal("insert_after"),
         Type.Literal("insert_before")
       ]),

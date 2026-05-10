@@ -9,7 +9,7 @@ import { renderCodeLikeCall, renderDiffResult } from "../rendering/pi-renderers.
 import { EditFileSchema } from "./schemas.js";
 
 export interface EditOperation {
-  edit_type: "replace" | "insert_after" | "insert_before";
+  edit_type: "replace" | "replace_range" | "insert_after" | "insert_before";
   anchor: string;
   end_anchor?: string;
   text: string;
@@ -59,7 +59,8 @@ export function applyAnchoredEdits(lines: string[], anchors: string[], edits: Ed
   const resolved: ResolvedEdit[] = edits
     .map((edit) => {
       const start = resolveAnchor(edit.anchor, anchors, lines, "anchor");
-      const end = edit.edit_type === "replace" ? resolveAnchor(edit.end_anchor, anchors, lines, "end_anchor") : start;
+      const isReplace = edit.edit_type === "replace" || edit.edit_type === "replace_range";
+      const end = isReplace ? resolveAnchor(edit.end_anchor, anchors, lines, "end_anchor") : start;
       if (end < start) throw new Error("end_anchor must not appear before anchor");
       return { edit, start, end };
     })
