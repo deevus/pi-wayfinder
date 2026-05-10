@@ -2,6 +2,8 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { withFileMutationQueue } from "@mariozechner/pi-coding-agent";
 import { readFile, writeFile } from "node:fs/promises";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
+import { combineDiffs, createUnifiedDiff, type DiffDetails } from "../rendering/diff-output.js";
+import { renderCodeLikeCall, renderDiffResult } from "../rendering/pi-renderers.js";
 import type { SymbolLocation, SymbolScanner } from "../symbols/symbol-scanner.js";
 import { RenameSymbolSchema } from "./schemas.js";
 
@@ -19,6 +21,18 @@ interface PreparedRenameFile {
   finalContent: string;
   finalLines: string[];
   replacementCount: number;
+  diff: DiffDetails;
+}
+
+interface RenameSymbolToolDetails {
+  paths: string[];
+  existing_symbol: string;
+  new_symbol: string;
+  replacements: number;
+  files?: string[];
+  diff?: string;
+  diffs?: DiffDetails[];
+  firstChangedLine?: number;
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
@@ -88,6 +102,16 @@ export function registerRenameSymbolTool(pi: ExtensionAPI, anchors: AnchorStateM
       "Use find_symbol_references first when a rename could affect many files or an ambiguous symbol name."
     ],
     parameters: RenameSymbolSchema,
+    renderCall(args, theme) {
+      const paths = Array.isArray(args.paths) ? args.paths : [];
+      const suffix = typeof args.existing_symbol === "string" && typeof args.new_symbol === "string"
+        ? theme.fg("dim", ` (${args.existing_symbol} → ${args.new_symbol})`)
+        : "";
+      return renderCodeLikeCall("rename_symbol", paths, theme, suffix);
+    },
+    renderResult(result, options, theme, context) {
+      return renderDiffResult(result as never, options, theme, context, "Renaming");
+    },
     async execute(_id, params, signal, _onUpdate, ctx) {
       const paths = params.paths as string[] | undefined;
       const existingSymbol = params.existing_symbol as unknown;
@@ -100,7 +124,7 @@ export function registerRenameSymbolTool(pi: ExtensionAPI, anchors: AnchorStateM
       if (locations.length === 0) {
         return {
           content: [{ type: "text", text: `No occurrences of symbol '${existingSymbol}' found in the specified paths.` }],
-          details: { paths, existing_symbol: existingSymbol, new_symbol: newSymbol, replacements: 0 }
+          details: { paths, existing_symbol: existingSymbol, new_symbol: newSymbol, replacements: 0 } satisfies RenameSymbolToolDetails
         };
       }
 
@@ -119,12 +143,14 @@ export function registerRenameSymbolTool(pi: ExtensionAPI, anchors: AnchorStateM
             displayPath: location.displayPath
           }));
           const { finalContent, replacementCount } = applySymbolRenameToContent(originalContent, renameLocations, existingSymbol, newSymbol);
+          const displayPath = fileLocations[0]?.displayPath || absolutePath;
           prepared.push({
             absolutePath,
-            displayPath: fileLocations[0]?.displayPath || absolutePath,
+            displayPath,
             finalContent,
             finalLines: finalContent.split(/\r?\n/),
-            replacementCount
+            replacementCount,
+            diff: createUnifiedDiff(displayPath, originalContent, finalContent)
           });
         }
 
@@ -139,6 +165,7 @@ export function registerRenameSymbolTool(pi: ExtensionAPI, anchors: AnchorStateM
       });
 
       const totalReplacements = preparedFiles.reduce((sum, file) => sum + file.replacementCount, 0);
+      const diffs = preparedFiles.map((file) => file.diff).filter((diff) => diff.diff.length > 0);
       const fileLabel = preparedFiles.length === 1 ? "file" : "files";
       return {
         content: [{ type: "text", text: `Successfully renamed symbol '${existingSymbol}' to '${newSymbol}' (${totalReplacements} occurrences in ${preparedFiles.length} ${fileLabel}).` }],
@@ -147,8 +174,11 @@ export function registerRenameSymbolTool(pi: ExtensionAPI, anchors: AnchorStateM
           existing_symbol: existingSymbol,
           new_symbol: newSymbol,
           replacements: totalReplacements,
-          files: preparedFiles.map((file) => file.displayPath)
-        }
+          files: preparedFiles.map((file) => file.displayPath),
+          diffs,
+          diff: combineDiffs(diffs),
+          firstChangedLine: diffs[0]?.firstChangedLine
+        } satisfies RenameSymbolToolDetails
       };
     }
   });

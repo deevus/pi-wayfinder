@@ -167,4 +167,19 @@ describe("rename_symbol tool", () => {
 
     expect(confirm).not.toHaveBeenCalled();
   });
+
+  it("returns unified diff details across files", async () => {
+    const cwd = await createTempDir();
+    await writeFile(join(cwd, "first.ts"), "export function greet() { return 'hi'; }\n", "utf8");
+    await writeFile(join(cwd, "second.ts"), "import { greet } from './first';\nconsole.log(greet());\n", "utf8");
+
+    const tool = registerToolForTest();
+    const result = await tool.execute("call-diff", { paths: ["."], existing_symbol: "greet", new_symbol: "welcome" }, undefined, undefined, { cwd } as never);
+
+    expect(result.details?.diff).toContain("welcome");
+    expect(result.details?.diffs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: "first.ts" }),
+      expect.objectContaining({ path: "second.ts" }),
+    ]));
+  });
 });

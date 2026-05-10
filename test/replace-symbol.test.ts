@@ -163,7 +163,8 @@ describe("replace_symbol tool", () => {
     expect(result.content[0]?.type === "text" ? result.content[0].text : "").toContain(
       "Successfully replaced symbols 'greet' in sample.ts. Any existing hash anchors for these symbols are now stale.",
     );
-    expect(result.details).toEqual({ paths: ["sample.ts"], symbols: ["greet"] });
+    expect(result.details).toMatchObject({ paths: ["sample.ts"], symbols: ["greet"] });
+    expect(result.details?.diff).toContain("+  return name.toUpperCase();");
   });
 
   it("replaces a class method by suffix and keeps unrelated top-level code", async () => {
@@ -461,5 +462,35 @@ describe("replace_symbol tool", () => {
 
     expect(confirm).not.toHaveBeenCalled();
     await expect(readFile(filePath, "utf8")).resolves.toBe("export function greet() {\n  return 2;\n}\n");
+  });
+
+  it("returns unified diff details", async () => {
+    const cwd = await createTempDir();
+    const filePath = join(cwd, "sample.ts");
+    await writeFile(filePath, "function greet() {\n  return 'hi';\n}\n", "utf8");
+
+    const tool = registerToolForTest();
+    const result = await tool.execute(
+      "call-diff",
+      {
+        replacements: [
+          {
+            path: "sample.ts",
+            symbol: "greet",
+            type: "function",
+            text: "function greet() {\n  return 'hello';\n}",
+          },
+        ],
+      },
+      undefined,
+      undefined,
+      { cwd } as never,
+    );
+
+    expect(result.details?.diff).toContain("-  return 'hi';");
+    expect(result.details?.diff).toContain("+  return 'hello';");
+    expect(result.details?.diffs).toEqual([
+      expect.objectContaining({ path: "sample.ts", firstChangedLine: 1 }),
+    ]);
   });
 });

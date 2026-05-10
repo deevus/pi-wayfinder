@@ -5,6 +5,8 @@ import { dirname, resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { stripHashes } from "../anchors/line-hashing.js";
 import { ASTAnchorBridge, type SymbolRange } from "../ast/ast-anchor-bridge.js";
+import { combineDiffs, createUnifiedDiff, type DiffDetails } from "../rendering/diff-output.js";
+import { renderCodeLikeCall, renderDiffResult } from "../rendering/pi-renderers.js";
 import { ReplaceSymbolSchema } from "./schemas.js";
 
 export interface SymbolReplacement {
@@ -45,6 +47,15 @@ interface PreparedFileReplacementBatch {
   batch: FileReplacementBatch;
   finalContent: string;
   finalLines: string[];
+  diff: DiffDetails;
+}
+
+interface ReplaceSymbolToolDetails {
+  paths: string[];
+  symbols: string[];
+  diff: string;
+  diffs: DiffDetails[];
+  firstChangedLine?: number;
 }
 
 async function withFileMutationQueues<T>(absolutePaths: string[], fn: () => Promise<T>): Promise<T> {
@@ -115,6 +126,15 @@ export function registerReplaceSymbolTool(pi: ExtensionAPI, anchors: AnchorState
       "Provide complete raw replacement code without hash anchors; anchors are stripped if accidentally included.",
     ],
     parameters: ReplaceSymbolSchema,
+    renderCall(args, theme) {
+      const paths = Array.isArray(args.replacements)
+        ? args.replacements.map((replacement) => replacement.path).filter((path): path is string => typeof path === "string")
+        : [];
+      return renderCodeLikeCall("replace_symbol", paths, theme);
+    },
+    renderResult(result, options, theme, context) {
+      return renderDiffResult(result as never, options, theme, context, "Replacing");
+    },
     async execute(_id, params, signal, _onUpdate, ctx) {
       const replacements = params.replacements as SymbolReplacement[] | undefined;
       if (!Array.isArray(replacements) || replacements.length === 0) {
@@ -123,6 +143,7 @@ export function registerReplaceSymbolTool(pi: ExtensionAPI, anchors: AnchorState
 
       const batches = groupReplacementsByPath(replacements, ctx.cwd);
       const summaries: string[] = [];
+      let diffs: DiffDetails[] = [];
 
       await withFileMutationQueues(batches.map((batch) => batch.absolutePath), async () => {
         const preparedBatches: PreparedFileReplacementBatch[] = [];
@@ -148,8 +169,11 @@ export function registerReplaceSymbolTool(pi: ExtensionAPI, anchors: AnchorState
             batch,
             finalContent,
             finalLines: finalContent.split(/\r?\n/),
+            diff: createUnifiedDiff(batch.displayPath, originalContent, finalContent),
           });
         }
+
+        diffs = preparedBatches.map((prepared) => prepared.diff).filter((diff) => diff.diff.length > 0);
 
         for (const prepared of preparedBatches) {
           throwIfAborted(signal);
@@ -168,7 +192,10 @@ export function registerReplaceSymbolTool(pi: ExtensionAPI, anchors: AnchorState
         details: {
           paths: batches.map((batch) => batch.displayPath),
           symbols: replacements.map((replacement) => replacement.symbol),
-        },
+          diffs,
+          diff: combineDiffs(diffs),
+          firstChangedLine: diffs[0]?.firstChangedLine,
+        } satisfies ReplaceSymbolToolDetails,
       };
     },
   });
