@@ -8,6 +8,8 @@
 
 **Tech Stack:** TypeScript, pi extension API, pi TUI exports (`Text`, `Container`, `Spacer`, `renderDiff`, `highlightCode`, `getLanguageFromPath`), existing `diff` package, Vitest.
 
+Verification evidence: `npm test && npm run typecheck` passed with 14 test files / 100 tests. Renderer smoke tests passed for clean read-like rendering and mutating diffs.
+
 ---
 
 ## Source References

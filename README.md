@@ -92,3 +92,13 @@ The `replacements` array is required. Unsupported languages, parser failures, an
 ```
 
 The tool uses an in-memory session cache for scanned files, invalidated by file `mtime` and size. It does not create a persistent symbol index. Before writing, it prepares all affected files and verifies every indexed location still matches the existing symbol; if validation fails, no file is written.
+
+## Interactive rendering
+
+In pi's interactive TUI, Dirac tools render with pi-native readable output:
+
+- read-like tools hide `DiracX│` anchor prefixes visually while preserving anchors in model-facing tool content;
+- `edit_file`, `replace_symbol`, and `rename_symbol` render unified diffs using pi's diff renderer;
+- print/JSON/API outputs keep the same anchored text contract used by the agent.
+
+This means humans see clean code and diffs, while the agent still receives stable anchors for follow-up edits.
