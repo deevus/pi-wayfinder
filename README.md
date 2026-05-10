@@ -29,6 +29,8 @@ Inside pi:
 /dirac-tools replacement
 ```
 
+Slash-command mode changes are persisted in the current pi session and restored on reload/resume. An explicit `--dirac-tools-mode ...` flag takes precedence over the persisted session mode.
+
 ## Smoke tests
 
 ```bash

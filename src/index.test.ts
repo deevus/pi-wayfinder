@@ -1,32 +1,40 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { describe, expect, it, vi } from "vitest";
+import type { DiracToolMode } from "./mode.js";
 import diracToolsExtension from "./index.js";
+
+type SessionEntry = {
+  type: string;
+  customType?: string;
+  data?: unknown;
+};
 
 type UiContext = {
   ui: {
     setStatus: ReturnType<typeof vi.fn>;
     notify: ReturnType<typeof vi.fn>;
   };
+  sessionManager: {
+    getEntries: ReturnType<typeof vi.fn<() => SessionEntry[]>>;
+  };
 };
 
 type SessionStartHandler = (event: unknown, ctx: UiContext) => Promise<void> | void;
 type BeforeAgentStartHandler = (event: { systemPrompt: string }) => Promise<{ systemPrompt: string }> | { systemPrompt: string };
 type CommandHandler = (args: string, ctx: UiContext) => Promise<void> | void;
-
-function createMockPi(initialTools: string[]) {
+function createMockPi(initialTools: string[], options: { flagMode?: DiracToolMode } = {}) {
   let activeTools = [...initialTools];
   let sessionStartHandler: SessionStartHandler | undefined;
   let beforeAgentStartHandler: BeforeAgentStartHandler | undefined;
   const commands = new Map<string, { handler: CommandHandler }>();
-  const flags = new Map<string, string>([
-    ["dirac-tools-mode", "preferred"],
-    ["dirac-override-builtins", "none"]
-  ]);
+  const flags = new Map<string, string>([["dirac-override-builtins", "none"]]);
+  if (options.flagMode !== undefined) flags.set("dirac-tools-mode", options.flagMode);
 
   const pi = {
     registerTool: vi.fn(),
     registerFlag: vi.fn(),
     getFlag: vi.fn((name: string) => flags.get(name)),
+    appendEntry: vi.fn(),
     getActiveTools: vi.fn(() => [...activeTools]),
     setActiveTools: vi.fn((tools: string[]) => {
       activeTools = [...tools];
@@ -55,11 +63,14 @@ function createMockPi(initialTools: string[]) {
   };
 }
 
-function createContext(): UiContext {
+function createContext(entries: SessionEntry[] = []): UiContext {
   return {
     ui: {
       setStatus: vi.fn(),
       notify: vi.fn()
+    },
+    sessionManager: {
+      getEntries: vi.fn(() => entries)
     }
   };
 }
@@ -112,6 +123,46 @@ describe("diracToolsExtension", () => {
     expect(result?.systemPrompt).not.toContain("Preferred mode is active.");
     expect(result?.systemPrompt).toContain("Use replace_symbol for whole-symbol replacements");
   });
+
+  it("persists command-selected mode to the session", async () => {
+    const mock = createMockPi(["read", "edit"]);
+    const ctx = createContext();
+
+    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
+    const command = mock.commands.get("dirac-tools");
+
+    await command?.handler("replacement", ctx);
+
+    expect(mock.pi.appendEntry).toHaveBeenCalledWith("pi-dirac-tools:mode", { mode: "replacement" });
+  });
+
+  it("restores latest persisted mode on session start", async () => {
+    const mock = createMockPi(["read", "edit", "custom"]);
+    const ctx = createContext([
+      { type: "custom", customType: "pi-dirac-tools:mode", data: { mode: "additive" } },
+      { type: "custom", customType: "pi-dirac-tools:mode", data: { mode: "replacement" } }
+    ]);
+
+    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
+    await mock.sessionStartHandler?.({}, ctx);
+
+    expect(mock.activeTools).toEqual(["custom", ...expectedDiracTools, "write", "bash", "grep", "find", "ls"]);
+    const result = await mock.beforeAgentStartHandler?.({ systemPrompt: "base" });
+    expect(result?.systemPrompt).toContain("Replacement mode is active.");
+  });
+
+  it("uses an explicit CLI flag instead of persisted mode", async () => {
+    const mock = createMockPi(["read", "edit", "custom"], { flagMode: "preferred" });
+    const ctx = createContext([{ type: "custom", customType: "pi-dirac-tools:mode", data: { mode: "replacement" } }]);
+
+    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
+    await mock.sessionStartHandler?.({}, ctx);
+
+    expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedDiracTools]);
+    const result = await mock.beforeAgentStartHandler?.({ systemPrompt: "base" });
+    expect(result?.systemPrompt).toContain("Preferred mode is active.");
+  });
+
 
   it("registers replace_symbol with the extension tools", () => {
     const mock = createMockPi(["read", "edit"]);
