@@ -164,7 +164,7 @@ describe("replace_symbol tool", () => {
       "Successfully replaced symbols 'greet' in sample.ts. Any existing hash anchors for these symbols are now stale.",
     );
     expect(result.details).toMatchObject({ paths: ["sample.ts"], symbols: ["greet"] });
-    expect(result.details?.diff).toContain("+  return name.toUpperCase();");
+    expect(result.details?.diff).toContain("+2   return name.toUpperCase();");
   });
 
   it("replaces a class method by suffix and keeps unrelated top-level code", async () => {
@@ -487,10 +487,10 @@ describe("replace_symbol tool", () => {
       { cwd } as never,
     );
 
-    expect(result.details?.diff).toContain("-  return 'hi';");
-    expect(result.details?.diff).toContain("+  return 'hello';");
+    expect(result.details?.diff).toContain("-2   return 'hi';");
+    expect(result.details?.diff).toContain("+2   return 'hello';");
     expect(result.details?.diffs).toEqual([
-      expect.objectContaining({ path: "sample.ts", firstChangedLine: 1 }),
+      expect.objectContaining({ path: "sample.ts", firstChangedLine: 2 }),
     ]);
   });
 });

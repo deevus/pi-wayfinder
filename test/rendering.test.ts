@@ -68,10 +68,8 @@ describe("diff-output", () => {
   it("creates unified diffs and first changed line", () => {
     const result = createUnifiedDiff("sample.ts", "const value = 1;\n", "const value = 2;\n");
 
-    expect(result.diff).toContain("--- sample.ts\tbefore");
-    expect(result.diff).toContain("+++ sample.ts\tafter");
-    expect(result.diff).toContain("-const value = 1;");
-    expect(result.diff).toContain("+const value = 2;");
+    expect(result.diff).toContain("-1 const value = 1;");
+    expect(result.diff).toContain("+1 const value = 2;");
     expect(result.firstChangedLine).toBe(1);
     expect(firstChangedLineFromDiff(result.diff)).toBe(1);
   });
@@ -87,8 +85,8 @@ describe("diff-output", () => {
     const first = createUnifiedDiff("first.ts", "a\n", "b\n");
     const second = createUnifiedDiff("second.ts", "x\n", "y\n");
 
-    expect(combineDiffs([first, second])).toContain("--- first.ts");
-    expect(combineDiffs([first, second])).toContain("--- second.ts");
+    expect(combineDiffs([first, second])).toContain("Index: first.ts");
+    expect(combineDiffs([first, second])).toContain("Index: second.ts");
     expect(combineDiffs([first, { path: "empty.ts", diff: "" }, second])).not.toContain("empty.ts");
   });
 });

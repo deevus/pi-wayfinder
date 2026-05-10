@@ -234,8 +234,8 @@ describe("edit_file tool", () => {
     );
 
     expect(result.details).toMatchObject({ files: ["sample.ts"] });
-    expect(result.details?.diff).toContain("-const value = 1;");
-    expect(result.details?.diff).toContain("+const value = 2;");
+    expect(result.details?.diff).toContain("-1 const value = 1;");
+    expect(result.details?.diff).toContain("+1 const value = 2;");
     expect(result.details?.diffs).toEqual([
       expect.objectContaining({ path: "sample.ts", firstChangedLine: 1 })
     ]);
