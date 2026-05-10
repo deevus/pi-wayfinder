@@ -12,7 +12,7 @@ type RegisteredTool = Parameters<ExtensionAPI["registerTool"]>[0];
 const tempDirs: string[] = [];
 
 async function createTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "pi-dirac-read-file-"));
+  const dir = await mkdtemp(join(tmpdir(), "pi-wayfinder-read-file-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -56,10 +56,10 @@ describe("read_file tool", () => {
 
     expect(text).toContain("--- sample.txt ---");
     expect(text).toContain(`[File Hash: ${contentHash(content)}]`);
-    expect(text).toContain("DiracB│beta");
-    expect(text).toContain("DiracC│gamma");
-    expect(text).not.toContain("DiracA│alpha");
-    expect(text).not.toContain("DiracD│delta");
+    expect(text).toContain("WayB│beta");
+    expect(text).toContain("WayC│gamma");
+    expect(text).not.toContain("WayA│alpha");
+    expect(text).not.toContain("WayD│delta");
     expect(result.details).toEqual({ paths: ["sample.txt"] });
   });
 
@@ -74,8 +74,8 @@ describe("read_file tool", () => {
 
     expect(text).toContain("--- @at-path.txt ---");
     expect(text).toContain(`[File Hash: ${contentHash(content)}]`);
-    expect(text).toContain("DiracA│first");
-    expect(text).toContain("DiracB│second");
+    expect(text).toContain("WayA│first");
+    expect(text).toContain("WayB│second");
     expect(result.details).toEqual({ paths: ["@at-path.txt"] });
   });
 
@@ -89,12 +89,12 @@ describe("read_file tool", () => {
     const text = result.content[0]?.type === "text" ? result.content[0].text : "";
 
     expect(text).toContain("--- short.txt ---");
-    expect(text).toContain("DiracA│alpha");
-    expect(text).toContain("DiracB│beta");
+    expect(text).toContain("WayA│alpha");
+    expect(text).toContain("WayB│beta");
     expect(text).toContain("--- long.txt:3-4 ---");
-    expect(text).toContain("DiracC│line-3");
-    expect(text).toContain("DiracD│line-4");
-    expect(text).not.toContain("DiracE│line-5");
+    expect(text).toContain("WayC│line-3");
+    expect(text).toContain("WayD│line-4");
+    expect(text).not.toContain("WayE│line-5");
   });
 
   it("does not fail a mixed multi-file read when a global range starts beyond a short file", async () => {
@@ -107,12 +107,12 @@ describe("read_file tool", () => {
     const text = result.content[0]?.type === "text" ? result.content[0].text : "";
 
     expect(text).toContain("--- short.txt ---");
-    expect(text).toContain("DiracA│alpha");
-    expect(text).toContain("DiracB│beta");
+    expect(text).toContain("WayA│alpha");
+    expect(text).toContain("WayB│beta");
     expect(text).toContain("--- long.txt ---");
-    expect(text).toContain("DiracC│line-3");
-    expect(text).toContain("DiracD│line-4");
-    expect(text).not.toContain("DiracE│line-5");
+    expect(text).toContain("WayC│line-3");
+    expect(text).toContain("WayD│line-4");
+    expect(text).not.toContain("WayE│line-5");
   });
 
 
@@ -177,7 +177,7 @@ describe("read_file tool", () => {
 
     expect(text).toContain("--- huge-line.txt ---");
     expect(text).toContain(`[File Hash: ${contentHash(content)}]`);
-    expect(text).not.toContain("DiracA│xxx");
+    expect(text).not.toContain("WayA│xxx");
     expect(text).toContain("[Output truncated: showing the first 2 lines within 51200 bytes.");
   });
 });

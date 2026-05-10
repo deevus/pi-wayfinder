@@ -95,13 +95,13 @@ describe("diff-output", () => {
 
 describe("pi render helpers", () => {
   it("strips raw anchor prefixes for display", () => {
-    expect(stripAnchorPrefixesForDisplay("DiracA│const value = 1;")).toBe("const value = 1;");
-    expect(stripAnchorPrefixesForDisplay("  (greet) DiracB│const value = greet();")).toBe("  (greet) const value = greet();");
+    expect(stripAnchorPrefixesForDisplay("WayA│const value = 1;")).toBe("const value = 1;");
+    expect(stripAnchorPrefixesForDisplay("  (greet) WayB│const value = greet();")).toBe("  (greet) const value = greet();");
     expect(stripAnchorPrefixesForDisplay("no anchor here")).toBe("no anchor here");
   });
 
   it("hides only unanchored display metadata lines", () => {
-    expect(stripAnchorPrefixesForDisplay("--- src/sample.ts ---\n[File Hash: abc123]\nDiracA│[File Hash: source text]")).toBe("[File Hash: source text]");
+    expect(stripAnchorPrefixesForDisplay("--- src/sample.ts ---\n[File Hash: abc123]\nWayA│[File Hash: source text]")).toBe("[File Hash: source text]");
   });
 
   it("shortens long display paths", () => {
@@ -116,7 +116,7 @@ describe("pi render helpers", () => {
     expect(renderedCall).toContain("src/sample.ts");
 
     const result = renderCodeLikeResult(
-      { content: [{ type: "text", text: "--- src/sample.ts ---\n[File Hash: abc123]\nDiracA│const value = 1;\nDiracB│console.log(value);" }] },
+      { content: [{ type: "text", text: "--- src/sample.ts ---\n[File Hash: abc123]\nWayA│const value = 1;\nWayB│console.log(value);" }] },
       { expanded: false, isPartial: false },
       theme as never,
       renderContext,
@@ -125,7 +125,7 @@ describe("pi render helpers", () => {
 
     expect(rendered).toContain("const value = 1;");
     expect(rendered).toContain("console.log(value);");
-    expect(rendered).not.toContain("DiracA│");
+    expect(rendered).not.toContain("WayA│");
     expect(rendered).not.toContain("src/sample.ts");
     expect(rendered).not.toContain("File Hash");
   });
@@ -150,7 +150,7 @@ describe("read-like tool renderers", () => {
   it("read_file renderer hides anchors, file header, and file hash in TUI output", () => {
     const tool = collectTool(registerReadFileTool as never);
     const result = tool.renderResult?.(
-      { content: [{ type: "text", text: "--- src/sample.ts ---\n[File Hash: abc123]\nDiracA│const value = 1;" }] } as never,
+      { content: [{ type: "text", text: "--- src/sample.ts ---\n[File Hash: abc123]\nWayA│const value = 1;" }] } as never,
       { expanded: true, isPartial: false } as never,
       theme as never,
       { ...renderContext, args: { paths: ["src/sample.ts"] } } as never,
@@ -158,7 +158,7 @@ describe("read-like tool renderers", () => {
 
     const rendered = result?.render(120).join("\n") || "";
     expect(rendered).toContain("value =");
-    expect(rendered).not.toContain("DiracA│");
+    expect(rendered).not.toContain("WayA│");
     expect(rendered).not.toContain("src/sample.ts");
     expect(rendered).not.toContain("File Hash");
   });

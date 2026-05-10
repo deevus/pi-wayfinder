@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { describe, expect, it, vi } from "vitest";
-import type { DiracToolMode } from "./mode.js";
-import diracToolsExtension from "./index.js";
+import type { WayfinderToolMode } from "./mode.js";
+import wayfinderExtension from "./index.js";
 
 type SessionEntry = {
   type: string;
@@ -22,13 +22,13 @@ type UiContext = {
 type SessionStartHandler = (event: unknown, ctx: UiContext) => Promise<void> | void;
 type BeforeAgentStartHandler = (event: { systemPrompt: string }) => Promise<{ systemPrompt: string }> | { systemPrompt: string };
 type CommandHandler = (args: string, ctx: UiContext) => Promise<void> | void;
-function createMockPi(initialTools: string[], options: { flagMode?: DiracToolMode } = {}) {
+function createMockPi(initialTools: string[], options: { flagMode?: WayfinderToolMode } = {}) {
   let activeTools = [...initialTools];
   let sessionStartHandler: SessionStartHandler | undefined;
   let beforeAgentStartHandler: BeforeAgentStartHandler | undefined;
   const commands = new Map<string, { handler: CommandHandler }>();
-  const flags = new Map<string, string>([["dirac-override-builtins", "none"]]);
-  if (options.flagMode !== undefined) flags.set("dirac-tools-mode", options.flagMode);
+  const flags = new Map<string, string>([["wayfinder-override-builtins", "none"]]);
+  if (options.flagMode !== undefined) flags.set("wayfinder-mode", options.flagMode);
 
   const pi = {
     registerTool: vi.fn(),
@@ -75,7 +75,7 @@ function createContext(entries: SessionEntry[] = []): UiContext {
   };
 }
 
-const expectedDiracTools = [
+const expectedWayfinderTools = [
   "read_file",
   "edit_file",
   "get_file_skeleton",
@@ -85,35 +85,41 @@ const expectedDiracTools = [
   "rename_symbol"
 ];
 
-describe("diracToolsExtension", () => {
+describe("wayfinderExtension", () => {
   it("switches modes from the session-start active tool baseline", async () => {
     const mock = createMockPi(["read", "edit", "custom"]);
     const ctx = createContext();
 
-    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
+    wayfinderExtension(mock.pi as unknown as ExtensionAPI);
+
+    const registeredFlags = mock.pi.registerFlag.mock.calls.map(([name]) => name);
+    expect(registeredFlags).toContain("wayfinder-mode");
+    expect(registeredFlags).not.toContain("dirac-tools-mode");
+    expect(mock.commands.has("wayfinder")).toBe(true);
+    expect(mock.commands.has("dirac-tools")).toBe(false);
 
     expect(mock.sessionStartHandler).toBeDefined();
     await mock.sessionStartHandler?.({}, ctx);
-    expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedDiracTools]);
+    expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedWayfinderTools]);
 
-    const command = mock.commands.get("dirac-tools");
+    const command = mock.commands.get("wayfinder");
     expect(command).toBeDefined();
 
     await command?.handler("replacement", ctx);
-    expect(mock.activeTools).toEqual(["read", "custom", ...expectedDiracTools, "write", "bash", "grep", "find", "ls"]);
+    expect(mock.activeTools).toEqual(["read", "custom", ...expectedWayfinderTools, "write", "bash", "grep", "find", "ls"]);
 
     await command?.handler("additive", ctx);
-    expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedDiracTools]);
+    expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedWayfinderTools]);
   });
 
   it("uses command-selected mode for injected prompt guidance", async () => {
     const mock = createMockPi(["read", "edit"]);
     const ctx = createContext();
 
-    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
+    wayfinderExtension(mock.pi as unknown as ExtensionAPI);
 
     expect(mock.beforeAgentStartHandler).toBeDefined();
-    const command = mock.commands.get("dirac-tools");
+    const command = mock.commands.get("wayfinder");
     expect(command).toBeDefined();
 
     await command?.handler("replacement", ctx);
@@ -128,37 +134,47 @@ describe("diracToolsExtension", () => {
     const mock = createMockPi(["read", "edit"]);
     const ctx = createContext();
 
-    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
-    const command = mock.commands.get("dirac-tools");
+    wayfinderExtension(mock.pi as unknown as ExtensionAPI);
+    const command = mock.commands.get("wayfinder");
 
     await command?.handler("replacement", ctx);
 
-    expect(mock.pi.appendEntry).toHaveBeenCalledWith("pi-dirac-tools:mode", { mode: "replacement" });
+    expect(mock.pi.appendEntry).toHaveBeenCalledWith("pi-wayfinder:mode", { mode: "replacement" });
   });
 
+
+  it("does not restore deprecated dirac session keys", async () => {
+    const mock = createMockPi(["read", "edit", "custom"]);
+    const ctx = createContext([{ type: "custom", customType: "pi-dirac-tools:mode", data: { mode: "replacement" } }]);
+
+    wayfinderExtension(mock.pi as unknown as ExtensionAPI);
+    await mock.sessionStartHandler?.({}, ctx);
+
+    expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedWayfinderTools]);
+  });
   it("restores latest persisted mode on session start", async () => {
     const mock = createMockPi(["read", "edit", "custom"]);
     const ctx = createContext([
-      { type: "custom", customType: "pi-dirac-tools:mode", data: { mode: "additive" } },
-      { type: "custom", customType: "pi-dirac-tools:mode", data: { mode: "replacement" } }
+      { type: "custom", customType: "pi-wayfinder:mode", data: { mode: "additive" } },
+      { type: "custom", customType: "pi-wayfinder:mode", data: { mode: "replacement" } }
     ]);
 
-    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
+    wayfinderExtension(mock.pi as unknown as ExtensionAPI);
     await mock.sessionStartHandler?.({}, ctx);
 
-    expect(mock.activeTools).toEqual(["read", "custom", ...expectedDiracTools, "write", "bash", "grep", "find", "ls"]);
+    expect(mock.activeTools).toEqual(["read", "custom", ...expectedWayfinderTools, "write", "bash", "grep", "find", "ls"]);
     const result = await mock.beforeAgentStartHandler?.({ systemPrompt: "base" });
     expect(result?.systemPrompt).toContain("Replacement mode is active.");
   });
 
   it("uses an explicit CLI flag instead of persisted mode", async () => {
     const mock = createMockPi(["read", "edit", "custom"], { flagMode: "preferred" });
-    const ctx = createContext([{ type: "custom", customType: "pi-dirac-tools:mode", data: { mode: "replacement" } }]);
+    const ctx = createContext([{ type: "custom", customType: "pi-wayfinder:mode", data: { mode: "replacement" } }]);
 
-    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
+    wayfinderExtension(mock.pi as unknown as ExtensionAPI);
     await mock.sessionStartHandler?.({}, ctx);
 
-    expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedDiracTools]);
+    expect(mock.activeTools).toEqual(["read", "edit", "custom", ...expectedWayfinderTools]);
     const result = await mock.beforeAgentStartHandler?.({ systemPrompt: "base" });
     expect(result?.systemPrompt).toContain("Preferred mode is active.");
   });
@@ -167,9 +183,9 @@ describe("diracToolsExtension", () => {
   it("registers replace_symbol with the extension tools", () => {
     const mock = createMockPi(["read", "edit"]);
 
-    diracToolsExtension(mock.pi as unknown as ExtensionAPI);
+    wayfinderExtension(mock.pi as unknown as ExtensionAPI);
 
     const registeredNames = mock.pi.registerTool.mock.calls.map(([tool]) => tool.name);
-    expect(registeredNames).toEqual(expectedDiracTools);
+    expect(registeredNames).toEqual(expectedWayfinderTools);
   });
 });

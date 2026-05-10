@@ -75,7 +75,7 @@ const EXCLUDED_PATH_SEGMENTS = new Set([
   ".github",
   ".vscode",
   ".cursor",
-  ".dirac",
+  ".wayfinder",
   "out",
   "dist",
   "dist-standalone",
@@ -117,7 +117,7 @@ const MAX_FILE_SIZE = 1024 * 1024;
 
 export function isExcludedPathSegment(segment: string): boolean {
   if (EXCLUDED_PATH_SEGMENTS.has(segment)) return true;
-  if (segment.startsWith(".") && !segment.startsWith(".dirac")) return true;
+  if (segment.startsWith(".") && !segment.startsWith(".wayfinder")) return true;
   return false;
 }
 

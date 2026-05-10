@@ -24,7 +24,7 @@ function anchorName(index: number): string {
     out = alphabet[n % alphabet.length] + out;
     n = Math.floor(n / alphabet.length) - 1;
   } while (n >= 0);
-  return `Dirac${out}`;
+  return `Way${out}`;
 }
 
 export class AnchorStateManager {

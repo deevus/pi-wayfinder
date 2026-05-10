@@ -12,7 +12,7 @@ type RegisteredTool = Parameters<ExtensionAPI["registerTool"]>[0];
 const tempDirs: string[] = [];
 
 async function createTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "pi-dirac-edit-file-"));
+  const dir = await mkdtemp(join(tmpdir(), "pi-wayfinder-edit-file-"));
   tempDirs.push(dir);
   return dir;
 }

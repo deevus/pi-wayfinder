@@ -1,8 +1,8 @@
-pi-dirac-tools
+pi-wayfinder
 
 This project contains code and tree-sitter query assets adapted from Dirac.
 
 Dirac
 Copyright Dirac Delta Labs
-Licensed under the Apache License, Version 2.0.
+Licensed under the Apache License, Version 2.0
 Source: https://github.com/dirac-run/dirac

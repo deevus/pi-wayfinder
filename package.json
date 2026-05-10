@@ -1,13 +1,15 @@
 {
-  "name": "pi-dirac-tools",
+  "name": "pi-wayfinder",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "keywords": [
     "pi-package",
-    "dirac",
+    "wayfinder",
     "hash-anchored",
-    "ast"
+    "tree-sitter",
+    "ast",
+    "symbol-search"
   ],
   "scripts": {
     "test": "vitest run",

@@ -1,22 +1,22 @@
-export type DiracToolMode = "additive" | "preferred" | "replacement";
-export type DiracOverrideMode = "none" | "read" | "read_edit";
+export type WayfinderToolMode = "additive" | "preferred" | "replacement";
+export type WayfinderOverrideMode = "none" | "read" | "read_edit";
 
-export const DEFAULT_DIRAC_TOOL_MODE: DiracToolMode = "preferred";
-export const DEFAULT_DIRAC_OVERRIDE_MODE: DiracOverrideMode = "none";
+export const DEFAULT_WAYFINDER_TOOL_MODE: WayfinderToolMode = "preferred";
+export const DEFAULT_WAYFINDER_OVERRIDE_MODE: WayfinderOverrideMode = "none";
 
-export function parseToolMode(value: unknown): DiracToolMode {
+export function parseToolMode(value: unknown): WayfinderToolMode {
   if (value === "additive" || value === "preferred" || value === "replacement") return value;
-  return DEFAULT_DIRAC_TOOL_MODE;
+  return DEFAULT_WAYFINDER_TOOL_MODE;
 }
 
-export function parseOverrideMode(value: unknown): DiracOverrideMode {
+export function parseOverrideMode(value: unknown): WayfinderOverrideMode {
   if (value === "none" || value === "read" || value === "read_edit") return value;
-  return DEFAULT_DIRAC_OVERRIDE_MODE;
+  return DEFAULT_WAYFINDER_OVERRIDE_MODE;
 }
 
-export function activeToolsForMode(mode: DiracToolMode, currentTools: string[]): string[] {
-  const diracTools = ["read_file", "edit_file", "get_file_skeleton", "get_function", "replace_symbol", "find_symbol_references", "rename_symbol"];
-  if (mode !== "replacement") return Array.from(new Set([...currentTools, ...diracTools]));
+export function activeToolsForMode(mode: WayfinderToolMode, currentTools: string[]): string[] {
+  const wayfinderTools = ["read_file", "edit_file", "get_file_skeleton", "get_function", "replace_symbol", "find_symbol_references", "rename_symbol"];
+  if (mode !== "replacement") return Array.from(new Set([...currentTools, ...wayfinderTools]));
   const keep = currentTools.filter((name) => name !== "edit");
-  return Array.from(new Set([...keep, ...diracTools, "read", "write", "bash", "grep", "find", "ls"]));
+  return Array.from(new Set([...keep, ...wayfinderTools, "read", "write", "bash", "grep", "find", "ls"]));
 }

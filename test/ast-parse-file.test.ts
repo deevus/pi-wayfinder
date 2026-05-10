@@ -7,7 +7,7 @@ import { parseFile } from "../src/ast/parse-file.js";
 
 const tempDirs: string[] = [];
 async function createTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "pi-dirac-parse-file-"));
+  const dir = await mkdtemp(join(tmpdir(), "pi-wayfinder-parse-file-"));
   tempDirs.push(dir);
   return dir;
 }

@@ -1,8 +1,8 @@
-import type { DiracToolMode } from "./mode.js";
+import type { WayfinderToolMode } from "./mode.js";
 
-export function getDiracPromptGuidance(mode: DiracToolMode): string {
+export function getWayfinderPromptGuidance(mode: WayfinderToolMode): string {
   const base = `
-## Dirac-style source editing
+## Wayfinder source editing
 
 When editing existing source files, prefer this workflow:
 1. Use read_file, get_file_skeleton, or get_function to understand the code and obtain stable anchors.
@@ -32,7 +32,7 @@ Symbol navigation rules:
     return `${base}\nReplacement mode is active. Treat read_file, edit_file, and replace_symbol as the primary source-code read/edit tools. Built-in read remains available for images, PDFs, and binary/non-source assets.`;
   }
   if (mode === "additive") {
-    return `${base}\nAdditive mode is active. Dirac tools are available when precision matters.`;
+    return `${base}\nAdditive mode is active. Wayfinder tools are available when precision matters.`;
   }
-  return `${base}\nPreferred mode is active. Prefer Dirac tools for source-code reads and edits.`;
+  return `${base}\nPreferred mode is active. Prefer Wayfinder tools for source-code reads and edits.`;
 }

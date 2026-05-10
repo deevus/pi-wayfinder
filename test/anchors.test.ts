@@ -15,11 +15,17 @@ describe("anchors", () => {
     expect(manager.getAnchors("/tmp/a.ts")).toBe(second);
   });
 
-  it("splits and strips anchor-prefixed lines", () => {
-    const line = formatLineWithHash("const x = 1", "DiracA");
+  it("generates Wayfinder-branded anchors", () => {
+    const manager = new AnchorStateManager();
 
-    expect(splitAnchor(line)).toEqual({ anchor: "DiracA", content: "const x = 1" });
-    expect(splitAnchor(" DiracB ")).toEqual({ anchor: "DiracB", content: "" });
+    expect(manager.reconcile("/tmp/a.ts", ["one", "two"])).toEqual(["WayA", "WayB"]);
+  });
+
+  it("splits and strips anchor-prefixed lines", () => {
+    const line = formatLineWithHash("const x = 1", "WayA");
+
+    expect(splitAnchor(line)).toEqual({ anchor: "WayA", content: "const x = 1" });
+    expect(splitAnchor(" WayB ")).toEqual({ anchor: "WayB", content: "" });
     expect(stripHashes(`${line}\nno-anchor│kept\nplain`)).toBe("const x = 1\nno-anchor│kept\nplain");
   });
 });

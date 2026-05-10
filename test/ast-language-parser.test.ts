@@ -7,7 +7,7 @@ import { loadRequiredLanguageParsers } from "../src/ast/language-parser.js";
 const tempDirs: string[] = [];
 
 async function createTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "pi-dirac-parser-"));
+  const dir = await mkdtemp(join(tmpdir(), "pi-wayfinder-parser-"));
   tempDirs.push(dir);
   return dir;
 }

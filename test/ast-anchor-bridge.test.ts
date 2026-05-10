@@ -8,7 +8,7 @@ import { ASTAnchorBridge } from "../src/ast/ast-anchor-bridge.js";
 
 const tempDirs: string[] = [];
 async function createTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "pi-dirac-bridge-"));
+  const dir = await mkdtemp(join(tmpdir(), "pi-wayfinder-bridge-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -31,9 +31,9 @@ describe("ASTAnchorBridge", () => {
     const text = await ASTAnchorBridge.getFileSkeleton(filePath, new AnchorStateManager());
 
     expect(text).toContain("|----");
-    expect(text).toContain("DiracA│export class Service {");
-    expect(text).toContain("DiracB│  run() { return 1; }");
-    expect(text).toContain("DiracD│export const helper = () => 2;");
+    expect(text).toContain("WayA│export class Service {");
+    expect(text).toContain("WayB│  run() { return 1; }");
+    expect(text).toContain("WayD│export const helper = () => 2;");
   });
 
   it("extracts nested method implementations by suffix name", async () => {
@@ -54,9 +54,9 @@ describe("ASTAnchorBridge", () => {
     expect(result?.foundNames).toEqual(["run"]);
     expect(result?.formattedContent).toContain("sample.ts::Service.run");
     expect(result?.formattedContent).toContain("[Function Hash:");
-    expect(result?.formattedContent).toContain("DiracD│  run() {");
-    expect(result?.formattedContent).toContain("DiracE│    return dep(this.value);");
-    expect(result?.formattedContent).toContain("DiracF│  }");
+    expect(result?.formattedContent).toContain("WayD│  run() {");
+    expect(result?.formattedContent).toContain("WayE│    return dep(this.value);");
+    expect(result?.formattedContent).toContain("WayF│  }");
   });
 
   it("includes adjacent comments/decorators in extended ranges", async () => {
@@ -71,8 +71,8 @@ describe("ASTAnchorBridge", () => {
 
     const result = await ASTAnchorBridge.getFunctions(filePath, "sample.ts", ["helper"], new AnchorStateManager());
 
-    expect(result?.formattedContent).toContain("DiracA│/** Docs for helper */");
-    expect(result?.formattedContent).toContain("DiracB│export function helper() {");
+    expect(result?.formattedContent).toContain("WayA│/** Docs for helper */");
+    expect(result?.formattedContent).toContain("WayB│export function helper() {");
   });
 
   it("does not include non-adjacent previous comments in function ranges or hashes", async () => {
@@ -91,8 +91,8 @@ describe("ASTAnchorBridge", () => {
 
     const result = await ASTAnchorBridge.getFunctions(filePath, "sample.ts", ["helper"], new AnchorStateManager());
 
-    expect(result?.formattedContent).not.toContain("DiracA│// Detached docs");
-    expect(result?.formattedContent).toContain("DiracC│export function helper() {");
+    expect(result?.formattedContent).not.toContain("WayA│// Detached docs");
+    expect(result?.formattedContent).toContain("WayC│export function helper() {");
     expect(result?.formattedContent).toContain(`[Function Hash: ${contentHash(functionText)}]`);
   });
 
@@ -115,10 +115,10 @@ describe("ASTAnchorBridge", () => {
 
     const result = await ASTAnchorBridge.getFunctions(filePath, "sample.ts", ["run"], new AnchorStateManager());
 
-    expect(result?.formattedContent).toContain("DiracA│import { dep } from './dep';");
-    expect(result?.formattedContent).not.toContain("DiracB│import { unused } from './used';");
-    expect(result?.formattedContent).toContain("DiracE│  used = 1;");
-    expect(result?.formattedContent).not.toContain("DiracF│  value = 2;");
+    expect(result?.formattedContent).toContain("WayA│import { dep } from './dep';");
+    expect(result?.formattedContent).not.toContain("WayB│import { unused } from './used';");
+    expect(result?.formattedContent).toContain("WayE│  used = 1;");
+    expect(result?.formattedContent).not.toContain("WayF│  value = 2;");
   });
 
   it("does not duplicate target class fields while collecting context", async () => {
@@ -135,7 +135,7 @@ describe("ASTAnchorBridge", () => {
     const marker = "│  run = () => this.used";
 
     expect(result?.formattedContent.split(marker).length).toBe(2);
-    expect(result?.formattedContent).toContain("DiracC│  used = 1;");
+    expect(result?.formattedContent).toContain("WayC│  used = 1;");
   });
 
   it("returns symbol ranges with adjacent comments, nameText, and no detached comments", async () => {

@@ -8,7 +8,7 @@ import { SymbolScanner, discoverSourceFiles, isExcludedPathSegment, isSupportedS
 const tempDirs: string[] = [];
 
 async function createTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "pi-dirac-symbol-scanner-"));
+  const dir = await mkdtemp(join(tmpdir(), "pi-wayfinder-symbol-scanner-"));
   tempDirs.push(dir);
   return dir;
 }

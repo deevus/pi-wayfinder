@@ -13,7 +13,7 @@ import { registerGetFunctionTool } from "../src/tools/get-function.js";
 const tempDirs: string[] = [];
 
 async function createTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "pi-dirac-ast-tools-"));
+  const dir = await mkdtemp(join(tmpdir(), "pi-wayfinder-ast-tools-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -81,9 +81,9 @@ describe("AST read tools", () => {
     const text = result.content[0]?.type === "text" ? result.content[0].text : "";
 
     expect(text).toContain("--- sample.ts ---");
-    expect(text).toContain("DiracC│export function greet(name: string) {");
-    expect(text).toContain("DiracG│class Greeter {");
-    expect(text).toContain("DiracM│const helper = (value: number) => value + 1;");
+    expect(text).toContain("WayC│export function greet(name: string) {");
+    expect(text).toContain("WayG│class Greeter {");
+    expect(text).toContain("WayM│const helper = (value: number) => value + 1;");
     expect(text).not.toContain("return `hello ${name}`;");
     expect(result.details).toEqual({ paths: ["sample.ts"] });
   });
@@ -131,11 +131,11 @@ describe("AST read tools", () => {
 
     expect(text).toContain("sample.ts::greet");
     expect(text).toContain(`[Function Hash: ${contentHash(body.join("\n"))}]`);
-    expect(text).toContain("DiracC│export function greet(name: string) {");
-    expect(text).toContain("DiracD│  const message = `hello ${name}`;");
-    expect(text).toContain("DiracE│  return message;");
-    expect(text).toContain("DiracF│}");
-    expect(text).not.toContain("DiracH│class Greeter {");
+    expect(text).toContain("WayC│export function greet(name: string) {");
+    expect(text).toContain("WayD│  const message = `hello ${name}`;");
+    expect(text).toContain("WayE│  return message;");
+    expect(text).toContain("WayF│}");
+    expect(text).not.toContain("WayH│class Greeter {");
     expect(text).not.toContain("sample.ts::Missing\nNot found.");
     expect(result.details).toEqual({ paths: ["sample.ts"], function_names: ["greet", "Missing"] });
   });
@@ -370,7 +370,7 @@ describe("AST read tools", () => {
     expect(text).toContain('const double = "}";');
     expect(text).toContain("const template = `}`;");
     expect(text).toContain("return { ok: true };");
-    expect(text).toContain("DiracI│}");
+    expect(text).toContain("WayI│}");
     expect(text).not.toContain("const leaked = 1;");
   });
 });

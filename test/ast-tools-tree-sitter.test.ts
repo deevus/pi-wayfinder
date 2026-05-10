@@ -12,7 +12,7 @@ type RegisteredTool = Parameters<ExtensionAPI["registerTool"]>[0];
 const tempDirs: string[] = [];
 
 async function createTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "pi-dirac-ast-tools-ts-"));
+  const dir = await mkdtemp(join(tmpdir(), "pi-wayfinder-ast-tools-ts-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -68,9 +68,9 @@ describe("tree-sitter AST read tool integration", () => {
     const text = result.content[0]?.type === "text" ? result.content[0].text : "";
 
     expect(text).toContain("--- sample.ts ---");
-    expect(text).toContain("DiracA│class Service {");
-    expect(text).toContain("DiracB│  run() {");
-    expect(text).toContain("DiracG│const helper = () => 2;");
+    expect(text).toContain("WayA│class Service {");
+    expect(text).toContain("WayB│  run() {");
+    expect(text).toContain("WayG│const helper = () => 2;");
     expect(text).not.toContain("return 1;");
   });
 
@@ -98,9 +98,9 @@ describe("tree-sitter AST read tool integration", () => {
     const text = result.content[0]?.type === "text" ? result.content[0].text : "";
 
     expect(text).toContain("sample.ts::Service.run");
-    expect(text).toContain("DiracB│  run() {");
-    expect(text).toContain("DiracC│    return 1;");
-    expect(text).toContain("DiracD│  }");
+    expect(text).toContain("WayB│  run() {");
+    expect(text).toContain("WayC│    return 1;");
+    expect(text).toContain("WayD│  }");
     expect(text).not.toContain("const helper = () => 2;");
   });
 
@@ -122,9 +122,9 @@ describe("tree-sitter AST read tool integration", () => {
     const text = result.content[0]?.type === "text" ? result.content[0].text : "";
 
     expect(text).toContain("--- sample.js ---");
-    expect(text).toContain("DiracA│class Service {");
-    expect(text).toContain("DiracB│  run() {");
-    expect(text).toContain("DiracG│const helper = () => 2;");
+    expect(text).toContain("WayA│class Service {");
+    expect(text).toContain("WayB│  run() {");
+    expect(text).toContain("WayG│const helper = () => 2;");
     expect(text).not.toContain("return 1;");
   });
 
@@ -152,9 +152,9 @@ describe("tree-sitter AST read tool integration", () => {
     const text = result.content[0]?.type === "text" ? result.content[0].text : "";
 
     expect(text).toContain("sample.js::Service.run");
-    expect(text).toContain("DiracB│  run() {");
-    expect(text).toContain("DiracC│    return 1;");
-    expect(text).toContain("DiracD│  }");
+    expect(text).toContain("WayB│  run() {");
+    expect(text).toContain("WayC│    return 1;");
+    expect(text).toContain("WayD│  }");
     expect(text).not.toContain("const helper = () => 2;");
   });
 });
