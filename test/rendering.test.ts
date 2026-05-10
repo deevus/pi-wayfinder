@@ -103,14 +103,14 @@ describe("pi render helpers", () => {
     expect(shortenDisplayPath("/tmp/a/very/long/path/sample.ts", 18)).toBe("…/path/sample.ts");
   });
 
-  it("renders code-like calls and results without anchor prefixes", () => {
+  it("renders code-like calls and results without anchor prefixes or metadata noise", () => {
     const call = renderCodeLikeCall("read_file", ["src/sample.ts"], theme as never);
     const renderedCall = call.render(80).join("\n");
     expect(renderedCall).toContain("read_file");
     expect(renderedCall).toContain("src/sample.ts");
 
     const result = renderCodeLikeResult(
-      { content: [{ type: "text", text: "--- src/sample.ts ---\nDiracA│const value = 1;\nDiracB│console.log(value);" }] },
+      { content: [{ type: "text", text: "--- src/sample.ts ---\n[File Hash: abc123]\nDiracA│const value = 1;\nDiracB│console.log(value);" }] },
       { expanded: false, isPartial: false },
       theme as never,
       renderContext,
@@ -118,7 +118,10 @@ describe("pi render helpers", () => {
     const rendered = result.render(120).join("\n");
 
     expect(rendered).toContain("const value = 1;");
+    expect(rendered).toContain("console.log(value);");
     expect(rendered).not.toContain("DiracA│");
+    expect(rendered).not.toContain("src/sample.ts");
+    expect(rendered).not.toContain("File Hash");
   });
 
   it("renders diff results with pi renderDiff plumbing", () => {
@@ -137,10 +140,10 @@ describe("pi render helpers", () => {
 });
 
 describe("read-like tool renderers", () => {
-  it("read_file renderer hides anchors in TUI output", () => {
+  it("read_file renderer hides anchors, file header, and file hash in TUI output", () => {
     const tool = collectTool(registerReadFileTool as never);
     const result = tool.renderResult?.(
-      { content: [{ type: "text", text: "--- src/sample.ts ---\nDiracA│const value = 1;" }] } as never,
+      { content: [{ type: "text", text: "--- src/sample.ts ---\n[File Hash: abc123]\nDiracA│const value = 1;" }] } as never,
       { expanded: true, isPartial: false } as never,
       theme as never,
       { ...renderContext, args: { paths: ["src/sample.ts"] } } as never,
@@ -149,6 +152,8 @@ describe("read-like tool renderers", () => {
     const rendered = result?.render(120).join("\n") || "";
     expect(rendered).toContain("value =");
     expect(rendered).not.toContain("DiracA│");
+    expect(rendered).not.toContain("src/sample.ts");
+    expect(rendered).not.toContain("File Hash");
   });
 
   it("get_file_skeleton and get_function expose renderers", () => {
@@ -164,6 +169,20 @@ describe("mutating tool renderers", () => {
     const result = tool.renderResult?.(
       { content: [{ type: "text", text: "Updated sample.ts" }], details: { diff: diff.diff } } as never,
       { expanded: true, isPartial: false } as never,
+      theme as never,
+      { ...renderContext, args: { files: [{ path: "sample.ts", edits: [] }] } } as never,
+    );
+
+    const rendered = result?.render(120).join("\n") || "";
+    expect(rendered).toContain("const value");
+  });
+
+  it("edit_file renderer displays diff output when collapsed", () => {
+    const tool = collectTool(registerEditFileTool as never);
+    const diff = createUnifiedDiff("sample.ts", "const value = 1;\n", "const value = 2;\n");
+    const result = tool.renderResult?.(
+      { content: [{ type: "text", text: "Updated sample.ts" }], details: { diff: diff.diff } } as never,
+      { expanded: false, isPartial: false } as never,
       theme as never,
       { ...renderContext, args: { files: [{ path: "sample.ts", edits: [] }] } } as never,
     );

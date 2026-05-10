@@ -25,6 +25,14 @@ function replaceTabs(value: string): string {
   return value.replace(/\t/g, "    ");
 }
 
+function isDisplayMetadataLine(line: string): boolean {
+  return (
+    /^--- .+ ---$/.test(line) ||
+    /^\[(File|Function) Hash: .+\]$/.test(line) ||
+    line === "All Hash Anchors provided below are stable and can be used with edit_file directly."
+  );
+}
+
 export function stripAnchorPrefixesForDisplay(text: string): string {
   return text
     .split("\n")
@@ -33,6 +41,7 @@ export function stripAnchorPrefixesForDisplay(text: string): string {
       if (symbolMatch) return line.replace(SYMBOL_ANCHOR_PREFIX, symbolMatch[1]);
       return line.replace(RAW_ANCHOR_PREFIX, "");
     })
+    .filter((line) => !isDisplayMetadataLine(line))
     .join("\n");
 }
 
@@ -102,9 +111,7 @@ export function renderDiffResult(
 
   const summary = getTextOutput(result).split("\n")[0] || partialLabel;
   component.addChild(new Text(theme.fg("success", summary), 0, 0));
-  if (options.expanded) {
-    component.addChild(new Spacer(1));
-    component.addChild(new Text(renderDiff(diff), 0, 0));
-  }
+  component.addChild(new Spacer(1));
+  component.addChild(new Text(renderDiff(diff), 0, 0));
   return component;
 }
