@@ -105,33 +105,45 @@ export function registerEditFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
     async execute(_id, params, signal, _onUpdate, ctx) {
       const summaries: string[] = [];
       const diffs: DiffDetails[] = [];
+      const failures: string[] = [];
 
       for (const file of params.files) {
         throwIfAborted(signal);
         const absolutePath = resolve(ctx.cwd, file.path.replace(/^@/, ""));
-        await withFileMutationQueue(absolutePath, async () => {
-          throwIfAborted(signal);
-          const content = await readFile(absolutePath, { encoding: "utf8", signal });
-          throwIfAborted(signal);
 
-          const lineEnding = detectLineEnding(content);
-          const lines = content.split(/\r?\n/);
-          const currentAnchors = anchors.reconcile(absolutePath, lines);
+        try {
+          await withFileMutationQueue(absolutePath, async () => {
+            throwIfAborted(signal);
+            const content = await readFile(absolutePath, { encoding: "utf8", signal });
+            throwIfAborted(signal);
 
-          throwIfAborted(signal);
-          const nextLines = applyAnchoredEdits(lines, currentAnchors, file.edits);
-          throwIfAborted(signal);
-          const nextContent = nextLines.join(lineEnding);
-          const diff = createUnifiedDiff(file.path, content, nextContent);
-          if (diff.diff) diffs.push(diff);
+            const lineEnding = detectLineEnding(content);
+            const lines = content.split(/\r?\n/);
+            const currentAnchors = anchors.reconcile(absolutePath, lines);
 
+            throwIfAborted(signal);
+            const nextLines = applyAnchoredEdits(lines, currentAnchors, file.edits);
+            throwIfAborted(signal);
+            const nextContent = nextLines.join(lineEnding);
+            const diff = createUnifiedDiff(file.path, content, nextContent);
+            if (diff.diff) diffs.push(diff);
+
+            throwIfAborted(signal);
+            await mkdir(dirname(absolutePath), { recursive: true });
+            throwIfAborted(signal);
+            await writeFile(absolutePath, nextContent, { encoding: "utf8", signal });
+            anchors.reconcile(absolutePath, nextLines);
+            summaries.push(`Updated ${file.path}: ${file.edits.length} anchored edit(s).`);
+          });
+        } catch (error) {
           throwIfAborted(signal);
-          await mkdir(dirname(absolutePath), { recursive: true });
-          throwIfAborted(signal);
-          await writeFile(absolutePath, nextContent, { encoding: "utf8", signal });
-          anchors.reconcile(absolutePath, nextLines);
-          summaries.push(`Updated ${file.path}: ${file.edits.length} anchored edit(s).`);
-        });
+          const message = error instanceof Error ? error.message : String(error);
+          failures.push(`Failed ${file.path}: ${message}`);
+        }
+      }
+
+      if (failures.length > 0) {
+        throw new Error(failures.join("\n"));
       }
 
       return {

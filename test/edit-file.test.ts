@@ -230,6 +230,55 @@ describe("edit_file tool", () => {
     await expect(readFile(path, "utf8")).resolves.toBe("alpha\nBETA\n");
   });
 
+  it("applies valid file edits before throwing for failed files", async () => {
+    const cwd = await createTempDir();
+    const invalidPath = join(cwd, "invalid.txt");
+    const validPath = join(cwd, "valid.txt");
+    await writeFile(invalidPath, "alpha\nbeta\n", "utf8");
+    await writeFile(validPath, "one\ntwo\n", "utf8");
+
+    const invalidAnchors = anchorsFor(["alpha", "beta", ""]);
+    const validAnchors = anchorsFor(["one", "two", ""]);
+    const tool = registerToolForTest();
+
+    await expect(
+      tool.execute(
+        "call-partial-failure",
+        {
+          files: [
+            {
+              path: "invalid.txt",
+              edits: [
+                {
+                  edit_type: "replace",
+                  anchor: formatLineWithHash("beta", invalidAnchors[1]),
+                  text: "BETA"
+                }
+              ]
+            },
+            {
+              path: "valid.txt",
+              edits: [
+                {
+                  edit_type: "replace",
+                  anchor: formatLineWithHash("two", validAnchors[1]),
+                  end_anchor: formatLineWithHash("two", validAnchors[1]),
+                  text: "TWO"
+                }
+              ]
+            }
+          ]
+        },
+        undefined,
+        undefined,
+        { cwd } as never
+      )
+    ).rejects.toThrow(/Failed invalid\.txt: end_anchor is missing/);
+
+    await expect(readFile(invalidPath, "utf8")).resolves.toBe("alpha\nbeta\n");
+    await expect(readFile(validPath, "utf8")).resolves.toBe("one\nTWO\n");
+  });
+
   it("returns unified diff details for anchored edits", async () => {
     const cwd = await createTempDir();
     const filePath = join(cwd, "sample.ts");
