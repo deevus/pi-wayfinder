@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { initTheme } from "@mariozechner/pi-coding-agent";
+import { initTheme } from "@earendil-works/pi-coding-agent";
 import { AnchorStateManager } from "../src/anchors/AnchorStateManager.js";
 import { SymbolCache } from "../src/symbols/symbol-cache.js";
 import { SymbolScanner } from "../src/symbols/symbol-scanner.js";

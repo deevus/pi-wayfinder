@@ -1,6 +1,6 @@
-import type { AgentToolResult, Theme, ToolRenderResultOptions } from "@mariozechner/pi-coding-agent";
-import { getLanguageFromPath, highlightCode, renderDiff } from "@mariozechner/pi-coding-agent";
-import { Container, Text } from "@mariozechner/pi-tui";
+import type { AgentToolResult, Theme, ToolRenderResultOptions } from "@earendil-works/pi-coding-agent";
+import { getLanguageFromPath, highlightCode, renderDiff } from "@earendil-works/pi-coding-agent";
+import { Container, Text } from "@earendil-works/pi-tui";
 
 const RAW_ANCHOR_PREFIX = /^[A-Z][a-zA-Z]*│/;
 const SYMBOL_ANCHOR_PREFIX = /^(\s*\([^)]*\)\s+)[A-Z][a-zA-Z]*│/;

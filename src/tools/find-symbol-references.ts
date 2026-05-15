@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { readFile } from "node:fs/promises";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { formatLineWithHash } from "../anchors/line-hashing.js";
