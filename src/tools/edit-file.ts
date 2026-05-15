@@ -59,8 +59,13 @@ export function applyAnchoredEdits(lines: string[], anchors: string[], edits: Ed
   const resolved: ResolvedEdit[] = edits
     .map((edit) => {
       const start = resolveAnchor(edit.anchor, anchors, lines, "anchor");
-      const isReplace = edit.edit_type === "replace" || edit.edit_type === "replace_range";
-      const end = isReplace ? resolveAnchor(edit.end_anchor, anchors, lines, "end_anchor") : start;
+      let end = start;
+      if (edit.edit_type === "replace_range") {
+        if (!edit.end_anchor) throw new Error("end_anchor is required for replace_range edits");
+        end = resolveAnchor(edit.end_anchor, anchors, lines, "end_anchor");
+      } else if (edit.edit_type === "replace" && edit.end_anchor) {
+        end = resolveAnchor(edit.end_anchor, anchors, lines, "end_anchor");
+      }
       if (end < start) throw new Error("end_anchor must not appear before anchor");
       return { edit, start, end };
     })

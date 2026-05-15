@@ -59,6 +59,22 @@ describe("applyAnchoredEdits", () => {
     expect(next).toEqual(["zero", "one", "TWO", "three", "four"]);
   });
 
+
+  it("defaults replace end_anchor to the start anchor", () => {
+    const lines = ["one", "two", "three"];
+    const anchors = anchorsFor(lines);
+
+    const next = applyAnchoredEdits(lines, anchors, [
+      {
+        edit_type: "replace",
+        anchor: formatLineWithHash("two", anchors[1]),
+        text: "TWO"
+      }
+    ]);
+
+    expect(next).toEqual(["one", "TWO", "three"]);
+  });
+
   it("rejects stale anchor content", () => {
     const lines = ["one", "two"];
     const anchors = anchorsFor(lines);
@@ -250,7 +266,7 @@ describe("edit_file tool", () => {
               path: "invalid.txt",
               edits: [
                 {
-                  edit_type: "replace",
+                  edit_type: "replace_range",
                   anchor: formatLineWithHash("beta", invalidAnchors[1]),
                   text: "BETA"
                 }
@@ -273,7 +289,7 @@ describe("edit_file tool", () => {
         undefined,
         { cwd } as never
       )
-    ).rejects.toThrow(/Failed invalid\.txt: end_anchor is missing/);
+    ).rejects.toThrow(/Failed invalid\.txt: end_anchor is required for replace_range edits/);
 
     await expect(readFile(invalidPath, "utf8")).resolves.toBe("alpha\nbeta\n");
     await expect(readFile(validPath, "utf8")).resolves.toBe("one\nTWO\n");

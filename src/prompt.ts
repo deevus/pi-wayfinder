@@ -15,7 +15,9 @@ When editing existing source files, prefer this workflow:
 
 Anchor rules:
 - Anchors have the form AnchorWord│exact line content.
-- Always include the full anchored line as anchor/end_anchor.
+- Anchor values must include the full anchored line, e.g. AnchorWord│exact line content.
+- For single-line replace edits, end_anchor is optional and defaults to anchor.
+- For replace_range or multi-line replacements, include end_anchor as the full anchored line at the end of the range.
 - edit_file text must contain raw final code without anchors.
 
 replace_symbol rules:
