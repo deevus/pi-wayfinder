@@ -1,6 +1,6 @@
 import type { AgentToolResult, Theme, ToolRenderResultOptions } from "@earendil-works/pi-coding-agent";
 import { getLanguageFromPath, highlightCode, renderDiff } from "@earendil-works/pi-coding-agent";
-import { Container, Text } from "@earendil-works/pi-tui";
+import { Container, Text, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
 const RAW_ANCHOR_PREFIX = /^[A-Z][a-zA-Z]*│/;
 const SYMBOL_ANCHOR_PREFIX = /^(\s*\([^)]*\)\s+)[A-Z][a-zA-Z]*│/;
@@ -92,6 +92,36 @@ export function renderCodeLikeResult(
   return new Text(text, 0, 0);
 }
 
+class DiffFilePanel {
+  constructor(
+    private readonly title: string,
+    private readonly diff: string,
+    private readonly theme: Theme
+  ) {}
+
+  invalidate(): void {}
+
+  render(width: number): string[] {
+    if (width < 3) return [truncateToWidth(this.title, width)];
+
+    const bodyWidth = Math.max(1, width - 2);
+    const borderChar = "─";
+    const header = `─ ${truncateToWidth(this.title, Math.max(1, bodyWidth - 2), "")} `;
+    const headerPadding = Math.max(0, bodyWidth - visibleWidth(header));
+    const lines = [this.theme.fg("accent", `╭${header}${borderChar.repeat(headerPadding)}╮`)];
+
+    for (const line of renderDiff(this.diff).split("\n")) {
+      const text = truncateToWidth(line, bodyWidth, "");
+      const padding = Math.max(0, bodyWidth - visibleWidth(text));
+      lines.push(`│${text}${" ".repeat(padding)}│`);
+    }
+
+    lines.push(this.theme.fg("accent", `╰${borderChar.repeat(bodyWidth)}╯`));
+    return lines;
+  }
+}
+
+
 export function renderDiffResult(
   result: AgentToolResult<DiffRenderableDetails>,
   options: ToolRenderResultOptions,
@@ -107,8 +137,7 @@ export function renderDiffResult(
   if (diffs.length > 1) {
     diffs.forEach((item, index) => {
       if (index > 0) component.addChild(new Text("", 0, 0));
-      component.addChild(new Text(theme.fg("accent", `File: ${shortenDisplayPath(item.path)}`), 0, 0));
-      component.addChild(new Text(renderDiff(item.diff), 0, 0));
+      component.addChild(new DiffFilePanel(shortenDisplayPath(item.path), item.diff, theme));
     });
     return component;
   }

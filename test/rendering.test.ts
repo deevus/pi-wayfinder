@@ -207,10 +207,14 @@ describe("mutating tool renderers", () => {
     );
 
     const rendered = result?.render(120).join("\n") || "";
-    expect(rendered).toContain("File: first.ts");
-    expect(rendered).toContain("File: second.ts");
-    expect(rendered).toContain("const value");
-    expect(rendered).toContain("const name");
+    expect(rendered).toContain("╭─ first.ts");
+    expect(rendered).toContain("╭─ second.ts");
+    expect(rendered).toContain("-1 const value");
+    expect(rendered).toContain("+1 const value");
+    expect(rendered).toContain("-1 const name");
+    expect(rendered).toContain("+1 const name");
+    expect(rendered).toContain("╰");
+    expect(rendered).not.toContain("File: first.ts");
     expect(rendered).not.toContain("Index: first.ts");
     expect(rendered).not.toContain("Index: second.ts");
   });
