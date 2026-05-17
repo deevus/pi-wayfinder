@@ -1,6 +1,6 @@
 import type { AgentToolResult, Theme, ToolRenderResultOptions } from "@earendil-works/pi-coding-agent";
 import { getLanguageFromPath, highlightCode, renderDiff } from "@earendil-works/pi-coding-agent";
-import { Container, Text, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { Container, Spacer, Text, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 
 const RAW_ANCHOR_PREFIX = /^[A-Z][a-zA-Z]*│/;
 const SYMBOL_ANCHOR_PREFIX = /^(\s*\([^)]*\)\s+)[A-Z][a-zA-Z]*│/;
@@ -113,7 +113,7 @@ class DiffFilePanel {
     for (const line of renderDiff(this.diff).split("\n")) {
       const text = truncateToWidth(line, bodyWidth, "");
       const padding = Math.max(0, bodyWidth - visibleWidth(text));
-      lines.push(`│${text}${" ".repeat(padding)}│`);
+      lines.push(`${this.theme.fg("accent", "│")}${text}${" ".repeat(padding)}${this.theme.fg("accent", "│")}`);
     }
 
     lines.push(this.theme.fg("accent", `╰${borderChar.repeat(bodyWidth)}╯`));
@@ -135,8 +135,8 @@ export function renderDiffResult(
   const diffs = result.details?.diffs?.filter((item) => item.diff.trimEnd().length > 0) || [];
   const component = new Container();
   if (diffs.length > 1) {
-    diffs.forEach((item, index) => {
-      if (index > 0) component.addChild(new Text("", 0, 0));
+    diffs.forEach((item) => {
+      component.addChild(new Spacer(1));
       component.addChild(new DiffFilePanel(shortenDisplayPath(item.path), item.diff, theme));
     });
     return component;
