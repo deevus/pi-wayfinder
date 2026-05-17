@@ -98,19 +98,19 @@ function resolveAnchor(rawAnchor: string | undefined, anchors: string[], lines: 
 
   const { anchor, content } = splitAnchor(rawAnchor);
   if (!/^[A-Z][a-zA-Z]*$/.test(anchor)) {
-    const message = `invalid anchor format: ${rawAnchor}`;
+    const message = `${fieldName} has invalid hash format`;
     throw new EditFileError(message, { anchor, fieldName, requestedContent: content, message });
   }
 
   const index = anchors.indexOf(anchor);
   if (index === -1) {
-    const message = `anchor not found: ${anchor}`;
+    const message = `anchor not found; requested ${JSON.stringify(content)}`;
     throw new EditFileError(message, { anchor, fieldName, requestedContent: content, message });
   }
 
   if (lines[index] !== content) {
     const line = index + 1;
-    const message = `anchor content mismatch for ${anchor} at line ${line}; current ${JSON.stringify(lines[index])}, requested ${JSON.stringify(content)}`;
+    const message = `anchor content mismatch at line ${line}; current ${JSON.stringify(lines[index])}, requested ${JSON.stringify(content)}`;
     throw new EditFileError(message, {
       anchor,
       line,

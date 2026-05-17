@@ -104,9 +104,7 @@ describe("applyAnchoredEdits", () => {
         }
       ])
     ).toThrow(
-      "anchor content mismatch for " +
-        anchors[1] +
-        ' at line 2; current "beta", requested "old beta"'
+      'anchor content mismatch at line 2; current "beta", requested "old beta"'
     );
   });
 
@@ -121,7 +119,7 @@ describe("applyAnchoredEdits", () => {
           text: "BETA"
         }
       ])
-    ).toThrow("anchor not found: WayMissing");
+    ).toThrow('anchor not found; requested "beta"');
   });
 
   it("rejects overlapping edits", () => {
@@ -308,7 +306,38 @@ describe("edit_file tool", () => {
         undefined,
         { cwd } as never
       )
-    ).rejects.toThrow('Failed stale.txt: anchor content mismatch for ' + anchors[1] + ' at line 2; current "beta", requested "old beta"');
+    ).rejects.toThrow('Failed stale.txt: anchor content mismatch at line 2; current "beta", requested "old beta"');
+    await expect(
+      tool.execute(
+        "call-stale-anchor-details",
+        {
+          files: [
+            {
+              path: "stale.txt",
+              edits: [
+                {
+                  edit_type: "replace",
+                  anchor: formatLineWithHash("old beta", anchors[1]),
+                  text: "BETA"
+                }
+              ]
+            }
+          ]
+        },
+        undefined,
+        undefined,
+        { cwd } as never
+      )
+    ).rejects.toMatchObject({
+      message: 'Failed stale.txt: anchor content mismatch at line 2; current "beta", requested "old beta"',
+      details: {
+        failures: [
+          expect.objectContaining({
+            anchor: anchors[1]
+          })
+        ]
+      }
+    });
 
     await expect(readFile(path, "utf8")).resolves.toBe("alpha\nbeta\ngamma\n");
   });
