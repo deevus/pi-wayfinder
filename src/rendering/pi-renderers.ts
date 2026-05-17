@@ -112,6 +112,7 @@ export function renderReadFileResult(
         lines: renderSourceLines(section.path, section.lines, theme)
       })),
       theme,
+      options.expanded,
     );
     return component;
   }
@@ -186,10 +187,16 @@ function renderSourceLines(path: string, lines: string[], theme: Theme): string[
   return lang ? highlightCode(text, lang) : text.split("\n").map((line) => theme.fg("toolOutput", line));
 }
 
-function addTitledPanels(component: Container, panels: Array<{ title: string; lines: string[] }>, theme: Theme): void {
+function panelDisplayLines(lines: string[], expanded: boolean): string[] {
+  if (expanded || lines.length <= 10) return lines;
+  const visibleLines = lines.slice(0, 10);
+  return [...visibleLines, `... (${lines.length - visibleLines.length} more lines, expand to view)`];
+}
+
+function addTitledPanels(component: Container, panels: Array<{ title: string; lines: string[] }>, theme: Theme, expanded: boolean): void {
   for (const panel of panels) {
     component.addChild(new Spacer(1));
-    component.addChild(new TitledPanel(panel.title, panel.lines, theme));
+    component.addChild(new TitledPanel(panel.title, panelDisplayLines(panel.lines, expanded), theme));
   }
 }
 
@@ -208,10 +215,12 @@ export function renderDiffResult(
   const diffs = result.details?.diffs?.filter((item) => item.diff.trimEnd().length > 0) || [];
   const component = new Container();
   if (diffs.length > 1) {
-    diffs.forEach((item) => {
-      component.addChild(new Spacer(1));
-      component.addChild(new TitledPanel(shortenDisplayPath(item.path), renderDiff(item.diff).split("\n"), theme));
-    });
+    addTitledPanels(
+      component,
+      diffs.map((item) => ({ title: shortenDisplayPath(item.path), lines: renderDiff(item.diff).split("\n") })),
+      theme,
+      options.expanded,
+    );
     return component;
   }
 
