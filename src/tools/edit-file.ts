@@ -1,5 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { withFileMutationQueue } from "@earendil-works/pi-coding-agent";
+import { realpathSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
@@ -58,6 +59,15 @@ interface StagedFileEdit {
   editCount: number;
 }
 
+function canonicalTargetKey(absolutePath: string): string {
+  const resolvedPath = resolve(absolutePath);
+  try {
+    return realpathSync.native(resolvedPath);
+  } catch {
+    return resolvedPath;
+  }
+}
+
 function detectLineEnding(content: string): "\r\n" | "\n" {
   return content.match(/\r\n|\n/)?.[0] === "\r\n" ? "\r\n" : "\n";
 }
@@ -66,12 +76,12 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw signal.reason ?? new Error("edit_file aborted");
 }
 
-async function withFileMutationQueues<T>(absolutePaths: string[], fn: () => Promise<T>): Promise<T> {
-  const uniquePaths = Array.from(new Set(absolutePaths)).sort();
+async function withFileMutationQueues<T>(canonicalTargetKeys: string[], fn: () => Promise<T>): Promise<T> {
+  const uniqueKeys = Array.from(new Set(canonicalTargetKeys)).sort();
 
   const runWithQueue = async (index: number): Promise<T> => {
-    if (index >= uniquePaths.length) return fn();
-    return withFileMutationQueue(uniquePaths[index], () => runWithQueue(index + 1));
+    if (index >= uniqueKeys.length) return fn();
+    return withFileMutationQueue(uniqueKeys[index], () => runWithQueue(index + 1));
   };
 
   return runWithQueue(0);
@@ -166,19 +176,23 @@ export function registerEditFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
       return renderDiffResult(result as never, options, theme, context, "Editing");
     },
     async execute(_id, params, signal, _onUpdate, ctx) {
-      const fileTargets = params.files.map((file) => ({
-        file,
-        absolutePath: resolve(ctx.cwd, file.path.replace(/^@/, ""))
-      }));
+      const fileTargets = params.files.map((file) => {
+        const absolutePath = resolve(ctx.cwd, file.path.replace(/^@/, ""));
+        return {
+          file,
+          absolutePath,
+          canonicalKey: canonicalTargetKey(absolutePath)
+        };
+      });
       const seenPaths = new Set<string>();
-      for (const { absolutePath } of fileTargets) {
-        if (seenPaths.has(absolutePath)) throw new Error(`duplicate edit_file target path: ${absolutePath}`);
-        seenPaths.add(absolutePath);
+      for (const { absolutePath, canonicalKey } of fileTargets) {
+        if (seenPaths.has(canonicalKey)) throw new Error(`duplicate edit_file target path: ${absolutePath}`);
+        seenPaths.add(canonicalKey);
       }
 
       const staged: StagedFileEdit[] = [];
 
-      await withFileMutationQueues(fileTargets.map((target) => target.absolutePath), async () => {
+      await withFileMutationQueues(fileTargets.map((target) => target.canonicalKey), async () => {
         const failures: EditFailureDetails[] = [];
 
         for (const { file, absolutePath } of fileTargets) {
