@@ -91,6 +91,39 @@ describe("applyAnchoredEdits", () => {
     ).toThrow(/content mismatch/);
   });
 
+  it("reports stale anchor mismatches with line numbers and both contents", () => {
+    const lines = ["alpha", "beta", "gamma"];
+    const anchors = anchorsFor(lines);
+
+    expect(() =>
+      applyAnchoredEdits(lines, anchors, [
+        {
+          edit_type: "replace",
+          anchor: formatLineWithHash("old beta", anchors[1]),
+          text: "BETA"
+        }
+      ])
+    ).toThrow(
+      "anchor content mismatch for " +
+        anchors[1] +
+        ' at line 2; current "beta", requested "old beta"'
+    );
+  });
+
+  it("reports missing anchors with the anchor name", () => {
+    const lines = ["alpha", "beta"];
+
+    expect(() =>
+      applyAnchoredEdits(lines, ["WayA", "WayB"], [
+        {
+          edit_type: "replace",
+          anchor: "WayMissing│beta",
+          text: "BETA"
+        }
+      ])
+    ).toThrow("anchor not found: WayMissing");
+  });
+
   it("rejects overlapping edits", () => {
     const lines = ["one", "two", "three"];
     const anchors = anchorsFor(lines);

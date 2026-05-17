@@ -21,11 +21,32 @@ interface ResolvedEdit {
   end: number;
 }
 
+export interface EditFailureDetails {
+  path?: string;
+  anchor?: string;
+  line?: number;
+  fieldName?: string;
+  currentContent?: string;
+  requestedContent?: string;
+  message: string;
+}
+
+class EditFileError extends Error {
+  constructor(
+    message: string,
+    readonly failure: EditFailureDetails
+  ) {
+    super(message);
+    this.name = "EditFileError";
+  }
+}
+
 interface EditFileToolDetails {
   files: string[];
   diff: string;
   diffs: DiffDetails[];
   firstChangedLine?: number;
+  failures?: EditFailureDetails[];
 }
 
 function detectLineEnding(content: string): "\r\n" | "\n" {
@@ -37,20 +58,37 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
 }
 
 function resolveAnchor(rawAnchor: string | undefined, anchors: string[], lines: string[], fieldName = "anchor"): number {
-  if (!rawAnchor) throw new Error(`${fieldName} is missing`);
+  if (!rawAnchor) {
+    throw new EditFileError(`${fieldName} is missing`, { fieldName, message: `${fieldName} is missing` });
+  }
   if (!rawAnchor.includes(ANCHOR_DELIMITER)) {
-    throw new Error(`${fieldName} must be a raw anchored line in the form AnchorWord${ANCHOR_DELIMITER}exact line content`);
+    const message = `${fieldName} must be a raw anchored line in the form AnchorWord${ANCHOR_DELIMITER}exact line content`;
+    throw new EditFileError(message, { fieldName, message });
   }
 
   const { anchor, content } = splitAnchor(rawAnchor);
-  if (!/^[A-Z][a-zA-Z]*$/.test(anchor)) throw new Error(`invalid anchor format: ${rawAnchor}`);
+  if (!/^[A-Z][a-zA-Z]*$/.test(anchor)) {
+    const message = `invalid anchor format: ${rawAnchor}`;
+    throw new EditFileError(message, { anchor, fieldName, requestedContent: content, message });
+  }
 
   const index = anchors.indexOf(anchor);
-  if (index === -1) throw new Error(`anchor not found: ${anchor}`);
+  if (index === -1) {
+    const message = `anchor not found: ${anchor}`;
+    throw new EditFileError(message, { anchor, fieldName, requestedContent: content, message });
+  }
+
   if (lines[index] !== content) {
-    throw new Error(
-      `anchor content mismatch for ${anchor}; expected ${JSON.stringify(lines[index])}, got ${JSON.stringify(content)}`
-    );
+    const line = index + 1;
+    const message = `anchor content mismatch for ${anchor} at line ${line}; current ${JSON.stringify(lines[index])}, requested ${JSON.stringify(content)}`;
+    throw new EditFileError(message, {
+      anchor,
+      line,
+      fieldName,
+      currentContent: lines[index],
+      requestedContent: content,
+      message
+    });
   }
   return index;
 }
