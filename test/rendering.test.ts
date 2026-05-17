@@ -191,6 +191,32 @@ describe("read-like tool renderers", () => {
     expect(rendered).not.toContain("--- first.ts ---");
   });
 
+
+  it("read_file multi-file panels truncate each file when collapsed", () => {
+    const tool = collectTool(registerReadFileTool as never);
+    const longLines = Array.from({ length: 12 }, (_, index) => `Way${index}│line ${index + 1}`).join("\n");
+    const result = tool.renderResult?.(
+      {
+        content: [
+          {
+            type: "text",
+            text: `--- first.txt ---\n[File Hash: aaa]\n${longLines}\n\n--- second.txt ---\n[File Hash: bbb]\nWayA│second line`
+          }
+        ]
+      } as never,
+      { expanded: false, isPartial: false } as never,
+      theme as never,
+      { ...renderContext, args: { paths: ["first.txt", "second.txt"] } } as never,
+    );
+
+    const rendered = result?.render(120).join("\n") || "";
+    expect(rendered).toContain("line 1");
+    expect(rendered).toContain("line 10");
+    expect(rendered).not.toContain("line 11");
+    expect(rendered).toContain("... (2 more lines, expand to view)");
+    expect(rendered).toContain("second line");
+  });
+
   it("read_file call renderer makes global ranges explicit for all paths", () => {
     const tool = collectTool(registerReadFileTool as never);
     const call = tool.renderCall?.({ paths: ["short.txt", "long.txt"], start_line: 3, end_line: 4 } as never, theme as never, renderContext);
