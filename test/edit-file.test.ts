@@ -279,7 +279,7 @@ describe("edit_file tool", () => {
     await expect(readFile(path, "utf8")).resolves.toBe("alpha\nBETA\n");
   });
 
-  it("applies valid file edits before throwing for failed files", async () => {
+  it("does not write any files when one file in the batch fails validation", async () => {
     const cwd = await createTempDir();
     const invalidPath = join(cwd, "invalid.txt");
     const validPath = join(cwd, "valid.txt");
@@ -292,9 +292,19 @@ describe("edit_file tool", () => {
 
     await expect(
       tool.execute(
-        "call-partial-failure",
+        "call-atomic-failure",
         {
           files: [
+            {
+              path: "valid.txt",
+              edits: [
+                {
+                  edit_type: "replace",
+                  anchor: formatLineWithHash("two", validAnchors[1]),
+                  text: "TWO"
+                }
+              ]
+            },
             {
               path: "invalid.txt",
               edits: [
@@ -302,17 +312,6 @@ describe("edit_file tool", () => {
                   edit_type: "replace_range",
                   anchor: formatLineWithHash("beta", invalidAnchors[1]),
                   text: "BETA"
-                }
-              ]
-            },
-            {
-              path: "valid.txt",
-              edits: [
-                {
-                  edit_type: "replace",
-                  anchor: formatLineWithHash("two", validAnchors[1]),
-                  end_anchor: formatLineWithHash("two", validAnchors[1]),
-                  text: "TWO"
                 }
               ]
             }
@@ -325,7 +324,7 @@ describe("edit_file tool", () => {
     ).rejects.toThrow(/Failed invalid\.txt: end_anchor is required for replace_range edits/);
 
     await expect(readFile(invalidPath, "utf8")).resolves.toBe("alpha\nbeta\n");
-    await expect(readFile(validPath, "utf8")).resolves.toBe("one\nTWO\n");
+    await expect(readFile(validPath, "utf8")).resolves.toBe("one\ntwo\n");
   });
 
   it("returns unified diff details for anchored edits", async () => {
