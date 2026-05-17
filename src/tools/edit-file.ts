@@ -52,8 +52,6 @@ interface EditFileToolDetails {
 interface StagedFileEdit {
   path: string;
   absolutePath: string;
-  lineEnding: "\r\n" | "\n";
-  beforeContent: string;
   nextLines: string[];
   nextContent: string;
   diff: DiffDetails;
@@ -66,6 +64,17 @@ function detectLineEnding(content: string): "\r\n" | "\n" {
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw signal.reason ?? new Error("edit_file aborted");
+}
+
+async function withFileMutationQueues<T>(absolutePaths: string[], fn: () => Promise<T>): Promise<T> {
+  const uniquePaths = Array.from(new Set(absolutePaths)).sort();
+
+  const runWithQueue = async (index: number): Promise<T> => {
+    if (index >= uniquePaths.length) return fn();
+    return withFileMutationQueue(uniquePaths[index], () => runWithQueue(index + 1));
+  };
+
+  return runWithQueue(0);
 }
 
 function resolveAnchor(rawAnchor: string | undefined, anchors: string[], lines: string[], fieldName = "anchor"): number {
@@ -157,66 +166,73 @@ export function registerEditFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
       return renderDiffResult(result as never, options, theme, context, "Editing");
     },
     async execute(_id, params, signal, _onUpdate, ctx) {
+      const fileTargets = params.files.map((file) => ({
+        file,
+        absolutePath: resolve(ctx.cwd, file.path.replace(/^@/, ""))
+      }));
+      const seenPaths = new Set<string>();
+      for (const { absolutePath } of fileTargets) {
+        if (seenPaths.has(absolutePath)) throw new Error(`duplicate edit_file target path: ${absolutePath}`);
+        seenPaths.add(absolutePath);
+      }
+
       const staged: StagedFileEdit[] = [];
-      const failures: EditFailureDetails[] = [];
 
-      for (const file of params.files) {
-        throwIfAborted(signal);
-        const absolutePath = resolve(ctx.cwd, file.path.replace(/^@/, ""));
+      await withFileMutationQueues(fileTargets.map((target) => target.absolutePath), async () => {
+        const failures: EditFailureDetails[] = [];
 
-        try {
-          const content = await readFile(absolutePath, { encoding: "utf8", signal });
+        for (const { file, absolutePath } of fileTargets) {
           throwIfAborted(signal);
 
-          const lineEnding = detectLineEnding(content);
-          const lines = content.split(/\r?\n/);
-          const currentAnchors = anchors.reconcile(absolutePath, lines);
+          try {
+            const content = await readFile(absolutePath, { encoding: "utf8", signal });
+            throwIfAborted(signal);
 
-          throwIfAborted(signal);
-          const nextLines = applyAnchoredEdits(lines, currentAnchors, file.edits);
-          throwIfAborted(signal);
-          const nextContent = nextLines.join(lineEnding);
-          const diff = createUnifiedDiff(file.path, content, nextContent);
+            const lineEnding = detectLineEnding(content);
+            const lines = content.split(/\r?\n/);
+            const currentAnchors = anchors.reconcile(absolutePath, lines);
 
-          staged.push({
-            path: file.path,
-            absolutePath,
-            lineEnding,
-            beforeContent: content,
-            nextLines,
-            nextContent,
-            diff,
-            editCount: file.edits.length
-          });
-        } catch (error) {
-          throwIfAborted(signal);
-          const message = error instanceof Error ? error.message : String(error);
-          const failure = error instanceof EditFileError ? error.failure : { message };
-          failures.push({ ...failure, path: file.path, message: `Failed ${file.path}: ${message}` });
+            throwIfAborted(signal);
+            const nextLines = applyAnchoredEdits(lines, currentAnchors, file.edits);
+            throwIfAborted(signal);
+            const nextContent = nextLines.join(lineEnding);
+            const diff = createUnifiedDiff(file.path, content, nextContent);
+
+            staged.push({
+              path: file.path,
+              absolutePath,
+              nextLines,
+              nextContent,
+              diff,
+              editCount: file.edits.length
+            });
+          } catch (error) {
+            throwIfAborted(signal);
+            const message = error instanceof Error ? error.message : String(error);
+            const failure = error instanceof EditFileError ? error.failure : { message };
+            failures.push({ ...failure, path: file.path, message: `Failed ${file.path}: ${message}` });
+          }
         }
-      }
 
-      if (failures.length > 0) {
-        const error = new Error(failures.map((failure) => failure.message).join("\n"));
-        (error as Error & { details?: EditFileToolDetails }).details = {
-          files: params.files.map((file) => file.path),
-          diffs: [],
-          diff: "",
-          failures
-        };
-        throw error;
-      }
+        if (failures.length > 0) {
+          const error = new Error(failures.map((failure) => failure.message).join("\n"));
+          (error as Error & { details?: EditFileToolDetails }).details = {
+            files: params.files.map((file) => file.path),
+            diffs: [],
+            diff: "",
+            failures
+          };
+          throw error;
+        }
 
-      for (const item of staged) {
-        throwIfAborted(signal);
-        await withFileMutationQueue(item.absolutePath, async () => {
+        for (const item of staged) {
           throwIfAborted(signal);
           await mkdir(dirname(item.absolutePath), { recursive: true });
           throwIfAborted(signal);
           await writeFile(item.absolutePath, item.nextContent, { encoding: "utf8", signal });
           anchors.reconcile(item.absolutePath, item.nextLines);
-        });
-      }
+        }
+      });
 
       const diffs = staged.map((item) => item.diff).filter((diff) => diff.diff);
       const summaries = staged.map((item) => `Updated ${item.path}: ${item.editCount} anchored edit(s).`);

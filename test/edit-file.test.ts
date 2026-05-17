@@ -327,6 +327,64 @@ describe("edit_file tool", () => {
     await expect(readFile(validPath, "utf8")).resolves.toBe("one\ntwo\n");
   });
 
+  it("rejects duplicate target paths without writing any files", async () => {
+    const cwd = await createTempDir();
+    const duplicatePath = join(cwd, "duplicate.txt");
+    const otherPath = join(cwd, "other.txt");
+    await writeFile(duplicatePath, "alpha\nbeta\n", "utf8");
+    await writeFile(otherPath, "one\ntwo\n", "utf8");
+
+    const duplicateAnchors = anchorsFor(["alpha", "beta", ""]);
+    const otherAnchors = anchorsFor(["one", "two", ""]);
+    const tool = registerToolForTest();
+
+    await expect(
+      tool.execute(
+        "call-duplicate-target",
+        {
+          files: [
+            {
+              path: "other.txt",
+              edits: [
+                {
+                  edit_type: "replace",
+                  anchor: formatLineWithHash("two", otherAnchors[1]),
+                  text: "TWO"
+                }
+              ]
+            },
+            {
+              path: "duplicate.txt",
+              edits: [
+                {
+                  edit_type: "replace",
+                  anchor: formatLineWithHash("beta", duplicateAnchors[1]),
+                  text: "BETA"
+                }
+              ]
+            },
+            {
+              path: "./duplicate.txt",
+              edits: [
+                {
+                  edit_type: "replace",
+                  anchor: formatLineWithHash("alpha", duplicateAnchors[0]),
+                  text: "ALPHA"
+                }
+              ]
+            }
+          ]
+        },
+        undefined,
+        undefined,
+        { cwd } as never
+      )
+    ).rejects.toThrow(`duplicate edit_file target path: ${duplicatePath}`);
+
+    await expect(readFile(duplicatePath, "utf8")).resolves.toBe("alpha\nbeta\n");
+    await expect(readFile(otherPath, "utf8")).resolves.toBe("one\ntwo\n");
+  });
+
   it("returns unified diff details for anchored edits", async () => {
     const cwd = await createTempDir();
     const filePath = join(cwd, "sample.ts");
