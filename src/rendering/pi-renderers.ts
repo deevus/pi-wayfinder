@@ -25,6 +25,11 @@ function replaceTabs(value: string): string {
   return value.replace(/\t/g, "    ");
 }
 
+
+function pathForLanguageDetection(path: string): string {
+  return path.replace(/^@/, "").replace(/^(.+):(\d+)(?:-(\d+))?$/, "$1");
+}
+
 function isDisplayMetadataLine(line: string): boolean {
   return (
     /^--- .+ ---$/.test(line) ||
@@ -81,7 +86,7 @@ export function renderCodeLikeResult(
 
   const output = stripAnchorPrefixesForDisplay(getTextOutput(result));
   const rawPath = firstPathFromContext(context);
-  const lang = rawPath ? getLanguageFromPath(rawPath) : undefined;
+  const lang = rawPath ? getLanguageFromPath(pathForLanguageDetection(rawPath)) : undefined;
   const renderedLines = lang ? highlightCode(replaceTabs(output), lang) : output.split("\n").map((line) => theme.fg("toolOutput", replaceTabs(line)));
   const maxLines = options.expanded ? renderedLines.length : 10;
   const displayLines = renderedLines.slice(0, maxLines);
@@ -183,7 +188,7 @@ function parseFileSections(text: string): FileSection[] {
 
 function renderSourceLines(path: string, lines: string[], theme: Theme): string[] {
   const text = replaceTabs(lines.join("\n"));
-  const lang = getLanguageFromPath(path);
+  const lang = getLanguageFromPath(pathForLanguageDetection(path));
   return lang ? highlightCode(text, lang) : text.split("\n").map((line) => theme.fg("toolOutput", line));
 }
 
