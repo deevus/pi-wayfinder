@@ -102,7 +102,17 @@ export function renderDiffResult(
   if (options.isPartial) return new Text(theme.fg("warning", `${partialLabel}...`), 0, 0);
 
   const diff = result.details?.diff;
+  const diffs = result.details?.diffs?.filter((item) => item.diff.trimEnd().length > 0) || [];
   const component = new Container();
+  if (diffs.length > 1) {
+    diffs.forEach((item, index) => {
+      if (index > 0) component.addChild(new Text("", 0, 0));
+      component.addChild(new Text(theme.fg("accent", `File: ${shortenDisplayPath(item.path)}`), 0, 0));
+      component.addChild(new Text(renderDiff(item.diff), 0, 0));
+    });
+    return component;
+  }
+
   if (!diff) {
     const text = getTextOutput(result) || partialLabel;
     component.addChild(new Text(theme.fg("success", text), 0, 0));
