@@ -122,6 +122,13 @@ export function renderReadFileResult(
     return component;
   }
 
+  if (paths.length === 1) {
+    const component = new Container();
+    component.addChild(new Spacer(1));
+    component.addChild(renderCodeLikeResult(result, options, theme, context));
+    return component;
+  }
+
   return renderCodeLikeResult(result, options, theme, context);
 }
 

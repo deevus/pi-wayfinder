@@ -157,6 +157,7 @@ describe("read-like tool renderers", () => {
     );
 
     const rendered = result?.render(120).join("\n") || "";
+    expect(rendered.startsWith("\n")).toBe(true);
     expect(rendered).toContain("value =");
     expect(rendered).not.toContain("WayA│");
     expect(rendered).not.toContain("src/sample.ts");
