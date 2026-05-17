@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -383,6 +383,64 @@ describe("edit_file tool", () => {
 
     await expect(readFile(duplicatePath, "utf8")).resolves.toBe("alpha\nbeta\n");
     await expect(readFile(otherPath, "utf8")).resolves.toBe("one\ntwo\n");
+  });
+
+  it("rejects duplicate symlink target paths quickly without writing files", async () => {
+    const cwd = await createTempDir();
+    const targetPath = join(cwd, "target.txt");
+    const aliasPath = join(cwd, "target-alias.txt");
+    const original = "alpha\nbeta\n";
+    await writeFile(targetPath, original, "utf8");
+    await symlink(targetPath, aliasPath, "file");
+
+    const targetAnchors = anchorsFor(["alpha", "beta", ""]);
+    const tool = registerToolForTest();
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeout = setTimeout(() => reject(new Error("timed out waiting for duplicate symlink target rejection")), 500);
+    });
+
+    try {
+      await expect(
+        Promise.race([
+          tool.execute(
+            "call-duplicate-symlink-target",
+            {
+              files: [
+                {
+                  path: "target.txt",
+                  edits: [
+                    {
+                      edit_type: "replace",
+                      anchor: formatLineWithHash("beta", targetAnchors[1]),
+                      text: "BETA"
+                    }
+                  ]
+                },
+                {
+                  path: "target-alias.txt",
+                  edits: [
+                    {
+                      edit_type: "replace",
+                      anchor: formatLineWithHash("alpha", targetAnchors[0]),
+                      text: "ALPHA"
+                    }
+                  ]
+                }
+              ]
+            },
+            undefined,
+            undefined,
+            { cwd } as never
+          ),
+          timeoutPromise
+        ])
+      ).rejects.toThrow(`duplicate edit_file target path: ${aliasPath}`);
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    await expect(readFile(targetPath, "utf8")).resolves.toBe(original);
   });
 
   it("returns unified diff details for anchored edits", async () => {
