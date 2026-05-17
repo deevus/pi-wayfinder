@@ -279,6 +279,40 @@ describe("edit_file tool", () => {
     await expect(readFile(path, "utf8")).resolves.toBe("alpha\nBETA\n");
   });
 
+  it("reports stale anchor failures with file path and line number", async () => {
+    const cwd = await createTempDir();
+    const path = join(cwd, "stale.txt");
+    await writeFile(path, "alpha\nbeta\ngamma\n", "utf8");
+
+    const anchors = anchorsFor(["alpha", "beta", "gamma", ""]);
+    const tool = registerToolForTest();
+
+    await expect(
+      tool.execute(
+        "call-stale-anchor",
+        {
+          files: [
+            {
+              path: "stale.txt",
+              edits: [
+                {
+                  edit_type: "replace",
+                  anchor: formatLineWithHash("old beta", anchors[1]),
+                  text: "BETA"
+                }
+              ]
+            }
+          ]
+        },
+        undefined,
+        undefined,
+        { cwd } as never
+      )
+    ).rejects.toThrow('Failed stale.txt: anchor content mismatch for ' + anchors[1] + ' at line 2; current "beta", requested "old beta"');
+
+    await expect(readFile(path, "utf8")).resolves.toBe("alpha\nbeta\ngamma\n");
+  });
+
   it("does not write any files when one file in the batch fails validation", async () => {
     const cwd = await createTempDir();
     const invalidPath = join(cwd, "invalid.txt");
