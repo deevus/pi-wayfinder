@@ -163,6 +163,34 @@ describe("read-like tool renderers", () => {
     expect(rendered).not.toContain("File Hash");
   });
 
+
+  it("read_file renderer displays multi-file reads as titled panels", () => {
+    const tool = collectTool(registerReadFileTool as never);
+    const result = tool.renderResult?.(
+      {
+        content: [
+          {
+            type: "text",
+            text: "--- first.ts ---\n[File Hash: aaa]\nWayA│const first = 1;\n\n--- second.ts ---\n[File Hash: bbb]\nWayB│const second = 2;"
+          }
+        ]
+      } as never,
+      { expanded: true, isPartial: false } as never,
+      theme as never,
+      { ...renderContext, args: { paths: ["first.ts", "second.ts"] } } as never,
+    );
+
+    const rendered = result?.render(120).join("\n") || "";
+    expect(rendered.startsWith("\n╭─ first.ts")).toBe(true);
+    expect(rendered).toContain("╭─ second.ts");
+    expect(rendered).toContain("first =");
+    expect(rendered).toContain("second =");
+    expect(rendered).toContain("╰");
+    expect(rendered).not.toContain("WayA│");
+    expect(rendered).not.toContain("File Hash");
+    expect(rendered).not.toContain("--- first.ts ---");
+  });
+
   it("read_file call renderer makes global ranges explicit for all paths", () => {
     const tool = collectTool(registerReadFileTool as never);
     const call = tool.renderCall?.({ paths: ["short.txt", "long.txt"], start_line: 3, end_line: 4 } as never, theme as never, renderContext);

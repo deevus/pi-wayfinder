@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { AnchorStateManager } from "../anchors/AnchorStateManager.js";
 import { contentHash, formatLineWithHash } from "../anchors/line-hashing.js";
-import { renderCodeLikeCall, renderCodeLikeResult } from "../rendering/pi-renderers.js";
+import { renderCodeLikeCall, renderReadFileResult } from "../rendering/pi-renderers.js";
 import { appendOutputLine, appendTruncationNotice, createOutputAccumulator, throwIfAborted } from "./output-limits.js";
 import { ReadFileSchema } from "./schemas.js";
 
@@ -79,7 +79,7 @@ export function registerReadFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
       return renderCodeLikeCall("read_file", paths, theme, suffix);
     },
     renderResult(result, options, theme, context) {
-      return renderCodeLikeResult(result, options, theme, context);
+      return renderReadFileResult(result, options, theme, context);
     },
     async execute(_id, params, signal, _onUpdate, ctx) {
       const output = createOutputAccumulator();

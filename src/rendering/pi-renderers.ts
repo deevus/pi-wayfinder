@@ -92,10 +92,38 @@ export function renderCodeLikeResult(
   return new Text(text, 0, 0);
 }
 
-class DiffFilePanel {
+export function renderReadFileResult(
+  result: AgentToolResult<unknown>,
+  options: ToolRenderResultOptions,
+  theme: Theme,
+  context: RenderContextLike,
+): Container | Text {
+  if (options.isPartial) return new Text(theme.fg("warning", "Running..."), 0, 0);
+
+  const args = context.args as { paths?: unknown } | undefined;
+  const paths = Array.isArray(args?.paths) ? args.paths : [];
+  const sections = paths.length > 1 ? parseFileSections(getTextOutput(result)) : [];
+  if (sections.length > 1) {
+    const component = new Container();
+    addTitledPanels(
+      component,
+      sections.map((section) => ({
+        title: shortenDisplayPath(section.path),
+        lines: renderSourceLines(section.path, section.lines, theme)
+      })),
+      theme,
+    );
+    return component;
+  }
+
+  return renderCodeLikeResult(result, options, theme, context);
+}
+
+
+class TitledPanel {
   constructor(
     private readonly title: string,
-    private readonly diff: string,
+    private readonly lines: string[],
     private readonly theme: Theme
   ) {}
 
@@ -108,18 +136,63 @@ class DiffFilePanel {
     const borderChar = "─";
     const header = `─ ${truncateToWidth(this.title, Math.max(1, bodyWidth - 2), "")} `;
     const headerPadding = Math.max(0, bodyWidth - visibleWidth(header));
-    const lines = [this.theme.fg("accent", `╭${header}${borderChar.repeat(headerPadding)}╮`)];
+    const rendered = [this.theme.fg("accent", `╭${header}${borderChar.repeat(headerPadding)}╮`)];
 
-    for (const line of renderDiff(this.diff).split("\n")) {
+    for (const line of this.lines) {
       const text = truncateToWidth(line, bodyWidth, "");
       const padding = Math.max(0, bodyWidth - visibleWidth(text));
-      lines.push(`${this.theme.fg("accent", "│")}${text}${" ".repeat(padding)}${this.theme.fg("accent", "│")}`);
+      rendered.push(`${this.theme.fg("accent", "│")}${text}${" ".repeat(padding)}${this.theme.fg("accent", "│")}`);
     }
 
-    lines.push(this.theme.fg("accent", `╰${borderChar.repeat(bodyWidth)}╯`));
-    return lines;
+    rendered.push(this.theme.fg("accent", `╰${borderChar.repeat(bodyWidth)}╯`));
+    return rendered;
   }
 }
+
+interface FileSection {
+  path: string;
+  lines: string[];
+}
+
+function trimTrailingEmptyLines(lines: string[]): string[] {
+  const next = [...lines];
+  while (next.length > 0 && next[next.length - 1] === "") next.pop();
+  return next;
+}
+
+function parseFileSections(text: string): FileSection[] {
+  const sections: FileSection[] = [];
+  let current: FileSection | undefined;
+
+  for (const line of text.split("\n")) {
+    const header = line.match(/^--- (.+) ---$/);
+    if (header) {
+      if (current) sections.push({ ...current, lines: trimTrailingEmptyLines(current.lines) });
+      current = { path: header[1], lines: [] };
+      continue;
+    }
+
+    if (!current || /^\[File Hash: .+\]$/.test(line)) continue;
+    current.lines.push(stripAnchorPrefixesForDisplay(line));
+  }
+
+  if (current) sections.push({ ...current, lines: trimTrailingEmptyLines(current.lines) });
+  return sections;
+}
+
+function renderSourceLines(path: string, lines: string[], theme: Theme): string[] {
+  const text = replaceTabs(lines.join("\n"));
+  const lang = getLanguageFromPath(path);
+  return lang ? highlightCode(text, lang) : text.split("\n").map((line) => theme.fg("toolOutput", line));
+}
+
+function addTitledPanels(component: Container, panels: Array<{ title: string; lines: string[] }>, theme: Theme): void {
+  for (const panel of panels) {
+    component.addChild(new Spacer(1));
+    component.addChild(new TitledPanel(panel.title, panel.lines, theme));
+  }
+}
+
 
 
 export function renderDiffResult(
@@ -137,7 +210,7 @@ export function renderDiffResult(
   if (diffs.length > 1) {
     diffs.forEach((item) => {
       component.addChild(new Spacer(1));
-      component.addChild(new DiffFilePanel(shortenDisplayPath(item.path), item.diff, theme));
+      component.addChild(new TitledPanel(shortenDisplayPath(item.path), renderDiff(item.diff).split("\n"), theme));
     });
     return component;
   }
