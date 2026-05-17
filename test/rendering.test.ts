@@ -194,6 +194,27 @@ describe("mutating tool renderers", () => {
     expect(rendered).not.toContain("Updated sample.ts");
   });
 
+
+  it("edit_file renderer displays multi-file diffs as separate file blocks", () => {
+    const tool = collectTool(registerEditFileTool as never);
+    const first = createUnifiedDiff("first.ts", "const value = 1;\n", "const value = 2;\n");
+    const second = createUnifiedDiff("second.ts", "const name = 'old';\n", "const name = 'new';\n");
+    const result = tool.renderResult?.(
+      { content: [{ type: "text", text: "Updated files" }], details: { diff: combineDiffs([first, second]), diffs: [first, second] } } as never,
+      { expanded: true, isPartial: false } as never,
+      theme as never,
+      { ...renderContext, args: { files: [{ path: "first.ts", edits: [] }, { path: "second.ts", edits: [] }] } } as never,
+    );
+
+    const rendered = result?.render(120).join("\n") || "";
+    expect(rendered).toContain("File: first.ts");
+    expect(rendered).toContain("File: second.ts");
+    expect(rendered).toContain("const value");
+    expect(rendered).toContain("const name");
+    expect(rendered).not.toContain("Index: first.ts");
+    expect(rendered).not.toContain("Index: second.ts");
+  });
+
   it("edit_file renderer displays diff output when collapsed", () => {
     const tool = collectTool(registerEditFileTool as never);
     const diff = createUnifiedDiff("sample.ts", "const value = 1;\n", "const value = 2;\n");
