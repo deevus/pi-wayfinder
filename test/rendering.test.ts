@@ -164,6 +164,21 @@ describe("read-like tool renderers", () => {
   });
 
 
+  it("read_file renderer syntax highlights inline range paths", () => {
+    const tool = collectTool(registerReadFileTool as never);
+    const result = tool.renderResult?.(
+      { content: [{ type: "text", text: "--- src/sample.ts:1-2 ---\n[File Hash: abc123]\nWayA│const value = 1;" }] } as never,
+      { expanded: true, isPartial: false } as never,
+      theme as never,
+      { ...renderContext, args: { paths: ["src/sample.ts:1-2"] } } as never,
+    );
+
+    const rendered = result?.render(120).join("\n") || "";
+    expect(rendered).toContain("\u001b[");
+    expect(rendered).toContain("value =");
+  });
+
+
   it("read_file renderer displays multi-file reads as titled panels", () => {
     const tool = collectTool(registerReadFileTool as never);
     const result = tool.renderResult?.(
