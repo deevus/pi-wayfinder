@@ -207,6 +207,7 @@ describe("mutating tool renderers", () => {
     );
 
     const rendered = result?.render(120).join("\n") || "";
+    expect(rendered.startsWith("\n╭─ first.ts")).toBe(true);
     expect(rendered).toContain("╭─ first.ts");
     expect(rendered).toContain("╭─ second.ts");
     expect(rendered).toContain("-1 const value");
