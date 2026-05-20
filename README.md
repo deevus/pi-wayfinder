@@ -8,9 +8,9 @@ Wayfinder helps agents keep code context focused with compact file skeletons, ta
 
 Wayfinder gives agents precise source-code tools instead of forcing broad file reads and brittle line-number edits:
 
-- `get_file_skeleton` returns a compact outline before reading full source.
-- `get_function` reads only the definitions needed for the task.
-- `read_file` supports stable anchors and narrow line ranges.
+- `get_file_skeleton` is the first-pass source exploration tool, returning a compact outline before broad reads.
+- `get_function` follows the skeleton and reads only the definitions needed for the task.
+- `read_file` supports stable anchors and narrow line ranges when skeleton/function output is insufficient.
 - `edit_file` batches precise edits across one or more files by anchor.
 - `replace_symbol` rewrites complete functions, methods, classes, interfaces, or exported const/arrow functions.
 - `find_symbol_references` and `rename_symbol` avoid manual grep-and-edit loops.
@@ -67,6 +67,17 @@ Slash-command mode changes are persisted in the current pi session and restored 
 { "paths": ["PROJECTS/ROLLER/3d.h", "build.zig:150-230"] }
 ```
 
+
+## Agent acceptance tests
+
+Wayfinder includes an opt-in Dokimasia acceptance test that runs pi and asserts the model uses `get_file_skeleton` before source reads, then `get_function` for targeted implementation context:
+
+```bash
+npm run test:agent
+```
+
+This test invokes a real agent/model, so it is intentionally separate from `npm test` and requires working pi credentials.
+
 ## Smoke tests
 
 ```bash
@@ -75,6 +86,9 @@ pi -e . --wayfinder-mode replacement -p "Use read_file on README.md and report w
 ```
 
 ## Tree-sitter AST tools
+
+
+For source exploration, use `get_file_skeleton` first to understand the available symbols, then `get_function` for the relevant implementation. Use `read_file` for narrow line ranges, non-symbol context, small/config files, or when AST output is insufficient.
 
 `get_file_skeleton` and `get_function` use tree-sitter parsing for supported source files. Supported extensions include `bash`, `sh`, `zsh`, `ts`, `tsx`, `js`, `jsx`, `py`, `rs`, `go`, `c`, `h`, `cpp`, `cc`, `cxx`, `hpp`, `hh`, `hxx`, `cs`, `css`, `el`, `elisp`, `ex`, `exs`, `html`, `htm`, `rb`, `java`, `json`, `php`, `swift`, `kt`, `kts`, `lua`, `m`, `mm`, `ml`, `mli`, `res`, `resi`, `scala`, `sc`, `sol`, `rdl`, `tla`, `toml`, `vue`, and `zig`.
 

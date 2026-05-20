@@ -64,10 +64,11 @@ export function registerReadFileTool(pi: ExtensionAPI, anchors: AnchorStateManag
   pi.registerTool({
     name: "read_file",
     label: "Read File Anchored",
-    description: "Read one or more files and return stable line anchors for use with edit_file.",
-    promptSnippet: "Read source files with stable line anchors for precise edit_file operations.",
+    description: "Read one or more files or narrow line ranges with stable anchors when skeleton/function tools are insufficient.",
+    promptSnippet: "Read source files with stable line anchors for precise edit_file operations, narrow ranges, or non-symbol context.",
     promptGuidelines: [
-      "Use read_file before edit_file when changing existing source files.",
+      "For first-pass source exploration, prefer get_file_skeleton before read_file.",
+      "Use read_file before edit_file when changing existing source that is not covered by get_function or replace_symbol.",
       "For mixed multi-file reads where only one file needs a range, use an inline path suffix such as src/file.ts:10-50 instead of global start_line/end_line."
     ],
     parameters: ReadFileSchema,

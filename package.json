@@ -32,6 +32,7 @@
   ],
   "scripts": {
     "test": "vitest run",
+    "test:agent": "uv run --with git+https://github.com/deevus/dokimasia pytest tests/agent -m agent_e2e",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

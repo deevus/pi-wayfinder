@@ -4,14 +4,16 @@ export function getWayfinderPromptGuidance(mode: WayfinderToolMode): string {
   const base = `
 ## Wayfinder source editing
 
-When editing existing source files, prefer this workflow:
-1. Use read_file, get_file_skeleton, or get_function to understand the code and obtain stable anchors.
-2. Use replace_symbol for whole-symbol replacements such as functions, methods, classes, interfaces, or exported const/arrow functions.
-3. Use edit_file for targeted source edits that are smaller than a complete symbol.
-4. Batch non-overlapping edits across files in one edit_file or replace_symbol call.
-5. Use pi built-in edit/write only when anchors or AST symbol replacement are unnecessary, such as small config files or brand-new files.
-6. Use pi built-in read for non-source assets such as images, PDFs, or binary files; use read_file for source/text files where anchors are useful.
-7. For mixed read_file calls where only one file needs a line range, put the range on that path (for example, paths: ["src/a.ts", "build.zig:150-230"]) instead of using global start_line/end_line.
+When exploring existing source files, prefer this workflow:
+1. Start with get_file_skeleton to map functions, classes, methods, and exports without reading the whole file.
+2. Use get_function next for the specific definitions you need to understand or change.
+3. Use read_file only for narrow line ranges, non-symbol context, small/config files, or when skeleton/function output is insufficient.
+4. Use replace_symbol for whole-symbol replacements such as functions, methods, classes, interfaces, or exported const/arrow functions.
+5. Use edit_file for targeted source edits that are smaller than a complete symbol.
+6. Batch non-overlapping edits across files in one edit_file or replace_symbol call.
+7. Use pi built-in edit/write only when anchors or AST symbol replacement are unnecessary, such as small config files or brand-new files.
+8. Use pi built-in read for non-source assets such as images, PDFs, or binary files; use read_file for source/text files where anchors are useful.
+9. For mixed read_file calls where only one file needs a line range, put the range on that path (for example, paths: ["src/a.ts", "build.zig:150-230"]) instead of using global start_line/end_line.
 
 Anchor rules:
 - Anchors have the form AnchorWord│exact line content.
@@ -31,10 +33,10 @@ Symbol navigation rules:
 `;
 
   if (mode === "replacement") {
-    return `${base}\nReplacement mode is active. Treat read_file, edit_file, and replace_symbol as the primary source-code read/edit tools. Built-in read remains available for images, PDFs, and binary/non-source assets.`;
+    return `${base}\nReplacement mode is active. Treat get_file_skeleton and get_function as the primary source-code exploration tools, then use read_file, edit_file, and replace_symbol when their narrower roles apply. Built-in read remains available for images, PDFs, and binary/non-source assets.`;
   }
   if (mode === "additive") {
-    return `${base}\nAdditive mode is active. Wayfinder tools are available when precision matters.`;
+    return `${base}\nAdditive mode is active. Wayfinder tools are available when precision matters; use get_file_skeleton before broad source reads.`;
   }
-  return `${base}\nPreferred mode is active. Prefer Wayfinder tools for source-code reads and edits.`;
+  return `${base}\nPreferred mode is active. Prefer get_file_skeleton for first-pass source exploration, then get_function for targeted implementation reads.`;
 }
