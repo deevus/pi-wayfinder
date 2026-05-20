@@ -31,7 +31,7 @@ function registerSkeletonToolForTest(anchors = new AnchorStateManager()): Regist
   expect(registeredTool).toBeDefined();
   expect(registeredTool?.name).toBe("get_file_skeleton");
   expect(registeredTool?.label).toBe("Get File Skeleton");
-  expect(registeredTool?.description).toContain("compact anchored outline");
+  expect(registeredTool?.description).toContain("First-pass source exploration");
   return registeredTool as RegisteredTool;
 }
 
@@ -48,7 +48,7 @@ function registerFunctionToolForTest(anchors = new AnchorStateManager()): Regist
   expect(registeredTool).toBeDefined();
   expect(registeredTool?.name).toBe("get_function");
   expect(registeredTool?.label).toBe("Get Function");
-  expect(registeredTool?.description).toContain("Extract anchored implementations");
+  expect(registeredTool?.description).toContain("After get_file_skeleton");
   return registeredTool as RegisteredTool;
 }
 

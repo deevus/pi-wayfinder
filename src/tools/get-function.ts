@@ -268,7 +268,12 @@ export function registerGetFunctionTool(pi: ExtensionAPI, anchors: AnchorStateMa
   pi.registerTool({
     name: "get_function",
     label: "Get Function",
-    description: "Extract anchored implementations of named functions/classes from files.",
+    description: "After get_file_skeleton, extract anchored implementations of the specific named functions/classes needed for the task.",
+    promptSnippet: "Use get_function after get_file_skeleton to read only the relevant implementations.",
+    promptGuidelines: [
+      "Prefer get_function after a skeleton has identified the symbols relevant to the task.",
+      "Use read_file only if the needed context is not represented by a symbol or a narrow line range is clearer."
+    ],
     parameters: GetFunctionSchema,
     renderCall(args, theme) {
       const paths = Array.isArray(args.paths) ? args.paths : [];

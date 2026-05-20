@@ -3,5 +3,8 @@ dist/
 coverage/
 .env
 .DS_Store
+__pycache__/
+*.pyc
 
 .worktrees/
+__pycache__

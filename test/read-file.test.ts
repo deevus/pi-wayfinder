@@ -30,7 +30,7 @@ function registerToolForTest(): RegisteredTool {
   expect(registeredTool).toBeDefined();
   expect(registeredTool?.name).toBe("read_file");
   expect(registeredTool?.label).toBe("Read File Anchored");
-  expect(registeredTool?.description).toContain("stable line anchors");
+  expect(registeredTool?.description).toContain("when skeleton/function tools are insufficient");
   return registeredTool as RegisteredTool;
 }
 
