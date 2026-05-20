@@ -205,10 +205,17 @@ function panelDisplayLines(lines: string[], expanded: boolean): string[] {
   return [...visibleLines, `... (${lines.length - visibleLines.length} more lines, expand to view)`];
 }
 
-function addTitledPanels(component: Container, panels: Array<{ title: string; lines: string[] }>, theme: Theme, expanded: boolean): void {
+function addTitledPanels(
+  component: Container,
+  panels: Array<{ title: string; lines: string[] }>,
+  theme: Theme,
+  expanded: boolean,
+  truncateCollapsedPanels = true,
+): void {
   for (const panel of panels) {
     component.addChild(new Spacer(1));
-    component.addChild(new TitledPanel(panel.title, panelDisplayLines(panel.lines, expanded), theme));
+    const lines = truncateCollapsedPanels ? panelDisplayLines(panel.lines, expanded) : panel.lines;
+    component.addChild(new TitledPanel(panel.title, lines, theme));
   }
 }
 
@@ -232,6 +239,7 @@ export function renderDiffResult(
       diffs.map((item) => ({ title: shortenDisplayPath(item.path), lines: renderDiff(item.diff).split("\n") })),
       theme,
       options.expanded,
+      false,
     );
     return component;
   }

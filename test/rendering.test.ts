@@ -304,6 +304,38 @@ describe("mutating tool renderers", () => {
     expect(rendered).toContain("const value");
     expect(rendered).not.toContain("Updated sample.ts");
   });
+
+
+  it("edit_file collapsed multi-file renderer keeps every edited line visible across every file", () => {
+    const tool = collectTool(registerEditFileTool as never);
+    const before = Array.from({ length: 30 }, (_, index) => `line ${index + 1}`).join("\n") + "\n";
+    const after = Array.from({ length: 30 }, (_, index) => {
+      if (index === 1) return "line 2 edited";
+      if (index === 24) return "line 25 edited";
+      return `line ${index + 1}`;
+    }).join("\n") + "\n";
+    const secondBefore = Array.from({ length: 40 }, (_, index) => `other ${index + 1}`).join("\n") + "\n";
+    const secondAfter = Array.from({ length: 40 }, (_, index) => {
+      if (index === 0) return "other 1 edited";
+      if (index === 34) return "other 35 edited";
+      return `other ${index + 1}`;
+    }).join("\n") + "\n";
+    const first = createUnifiedDiff("first.ts", before, after);
+    const second = createUnifiedDiff("second.ts", secondBefore, secondAfter);
+    const result = tool.renderResult?.(
+      { content: [{ type: "text", text: "Updated files" }], details: { diff: combineDiffs([first, second]), diffs: [first, second] } } as never,
+      { expanded: false, isPartial: false } as never,
+      theme as never,
+      { ...renderContext, args: { files: [{ path: "first.ts", edits: [] }, { path: "second.ts", edits: [] }] } } as never,
+    );
+
+    const rendered = result?.render(120).join("\n") || "";
+    expect(rendered).toContain("+ 2 line 2 edited");
+    expect(rendered).toContain("+25 line 25 edited");
+    expect(rendered).toContain("+ 1 other 1 edited");
+    expect(rendered).toContain("+35 other 35 edited");
+    expect(rendered).toContain("...");
+  });
 });
 
 describe("symbol mutating renderers", () => {
